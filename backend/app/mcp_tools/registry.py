@@ -5,35 +5,69 @@ Mock(가짜) MCP 도구 모음.
 가짜 환자 데이터도 여기에 둔다(나중에 진짜 DB 테이블로 옮길 수 있음).
 """
 
-# ---- 가짜 병원 데이터 ---------------------------------------------------
-# attending_doctor / attending_nurse : 이 환자를 담당하는 의사/간호사의 user_id.
-# 마스킹 단계(app/core/masking.py)에서 "본인 담당 환자인지" 판단할 때 이 값을 사용한다.
-PATIENTS = {
-    "P1001": {
-        "patient_id": "P1001",
-        "name": "김민수",
-        "rrn": "900101-1234567",
-        "phone": "010-1234-5678",
-        "attending_doctor": "doctor_kim",
-        "attending_nurse": "nurse_lee",
-    },
-    "P1002": {
-        "patient_id": "P1002",
-        "name": "이영희",
-        "rrn": "880505-2345678",
-        "phone": "010-2222-3333",
-        "attending_doctor": "doctor_park",
-        "attending_nurse": "nurse_choi",
-    },
-}
-RECORDS = {
-    "P1001": {"patient_id": "P1001", "diagnosis": "고혈압", "content": "3개월 약물치료 필요"},
-    "P1002": {"patient_id": "P1002", "diagnosis": "제2형 당뇨", "content": "식이요법 병행 권장"},
-}
-APPOINTMENTS = {
-    "P1001": {"patient_id": "P1001", "next_appointment": "2026-06-02 10:30"},
-    "P1002": {"patient_id": "P1002", "next_appointment": "2026-06-05 14:00"},
-}
+# ---------------------------------------------------------------------------
+# 가짜 환자 30명을 자동 생성한다.
+# 이름/진단명/담당의/담당간호사 "목록"만 관리하면 되고,
+# 사람 수를 늘리고 싶으면 NAMES 리스트에 이름만 추가하면 된다.
+#
+# P1001(김민수) -> doctor_kim / nurse_lee
+# P1002(이영희) -> doctor_park / nurse_choi
+# 이 두 명은 예전 코드와 동일하게 맞춰뒀다 (기존 테스트 코드가 깨지지 않도록).
+# ---------------------------------------------------------------------------
+
+NAMES = [
+    "김민수", "이영희", "박철수", "최지우", "정하은", "강도현", "윤서연", "임재현",
+    "한소희", "오준영", "서지훈", "황유진", "신동욱", "권나연", "장민재", "송예은",
+    "홍성민", "배수아", "문상우", "노윤아", "안지호", "유나연", "조현우", "백서진",
+    "남궁민", "구본석", "표유정", "탁승현", "여진구", "선우빈", "백서이", "윤자경",
+    "권유진", "김서희", "손규하", "박지혜", "박세은", "진우현", "문수연", "강주현",
+    "정세형", "심예솔", "이유민", "이나은", "이규민", "강성훈", "김철민", "방혁진",
+    "나유진", "유정원",
+]
+
+DOCTORS = ["doctor_kim", "doctor_park", "doctor_choi", "doctor_jung"]
+NURSES = ["nurse_lee", "nurse_choi", "nurse_kang", "nurse_yoon"]
+
+DIAGNOSES = [
+    ("고혈압", "3개월 약물치료 필요"),
+    ("제2형 당뇨", "식이요법 병행 권장"),
+    ("천식", "흡입기 처방, 3개월 후 재방문"),
+    ("골절(우측 손목)", "깁스 착용 중, 6주 경과관찰"),
+    ("위염", "제산제 처방, 자극적 음식 제한 권고"),
+    ("알레르기 비염", "항히스타민제 처방"),
+    ("불면증", "수면 위생 교육 및 약물 상담"),
+    ("허리디스크", "물리치료 병행, 통증 조절"),
+    ("갑상선기능저하증", "호르몬제 복용 중, 정기 혈액검사 필요"),
+    ("편두통", "트립탄 계열 약물 처방"),
+]
+
+PATIENTS = {}
+RECORDS = {}
+APPOINTMENTS = {}
+
+for i, name in enumerate(NAMES):                 # i = 0, 1, 2, ... (0부터 시작)
+    pid = f"P{1001 + i}"                          # P1001, P1002, ... P1030
+    doctor = DOCTORS[i % len(DOCTORS)]
+    nurse = NURSES[i % len(NURSES)]
+    diagnosis, content = DIAGNOSES[i % len(DIAGNOSES)]
+
+    PATIENTS[pid] = {
+        "patient_id": pid,
+        "name": name,
+        "rrn": f"{900000 + i:06d}-{1000000 + i:07d}",
+        "phone": f"010-{1000 + i:04d}-{5000 + i:04d}",
+        "attending_doctor": doctor,
+        "attending_nurse": nurse,
+    }
+    RECORDS[pid] = {
+        "patient_id": pid,
+        "diagnosis": diagnosis,
+        "content": content,
+    }
+    APPOINTMENTS[pid] = {
+        "patient_id": pid,
+        "next_appointment": f"2026-06-{(i % 28) + 1:02d} {9 + (i % 8)}:00",
+    }
 
 
 # ---- 도구 함수들 -------------------------------------------------------
@@ -60,7 +94,6 @@ def export_csv(**_):
     return {"status": "exported", "file": "records.csv"}
 
 
-# 도구 이름 -> 실행 함수 매핑
 TOOL_FUNCTIONS = {
     "search_patient": search_patient,
     "get_appointment": get_appointment,
@@ -71,9 +104,7 @@ TOOL_FUNCTIONS = {
 
 
 def run_tool(name: str, arguments: dict):
-    """이름으로 도구를 찾아 실행한다."""
     fn = TOOL_FUNCTIONS.get(name)
     if fn is None:
         return {"error": f"알 수 없는 도구: {name}"}
     return fn(**arguments)
-    
