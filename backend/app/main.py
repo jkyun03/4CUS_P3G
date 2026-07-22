@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from app.database import init_db
 from app.seed import seed_tools
 from app.api.tool_call import router as tool_call_router
+from app.api.approval import router as apporvals_router
 
 
 @asynccontextmanager
@@ -28,6 +29,7 @@ app = FastAPI(title="IDEA Gateway", version="0.1", lifespan=lifespan)
 
 # 라우터 등록
 app.include_router(tool_call_router)
+app.include_router(approvals_router)
 
 
 @app.get("/")
