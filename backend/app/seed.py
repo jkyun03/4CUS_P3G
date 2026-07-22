@@ -11,6 +11,9 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models import Tool
 
+ALL_ROLES = ["doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
+             "security_officer", "system_admin", "intern", "hospital_admin"]
+
 DEFAULT_TOOLS = [
     {"name": "search_patient",     "role": "환자 검색",     "base_risk": "low",  "enabled": True,  "allowed_roles": ["doctor", "nurse", "admin"]},
     {"name": "get_appointment",    "role": "예약 조회",     "base_risk": "low",  "enabled": True,  "allowed_roles": ["doctor", "nurse", "admin"]},

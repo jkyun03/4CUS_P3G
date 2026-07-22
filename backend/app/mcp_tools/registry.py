@@ -6,9 +6,25 @@ Mock(가짜) MCP 도구 모음.
 """
 
 # ---- 가짜 병원 데이터 ---------------------------------------------------
+# attending_doctor / attending_nurse : 이 환자를 담당하는 의사/간호사의 user_id.
+# 마스킹 단계(app/core/masking.py)에서 "본인 담당 환자인지" 판단할 때 이 값을 사용한다.
 PATIENTS = {
-    "P1001": {"patient_id": "P1001", "name": "김민수", "rrn": "900101-1234567", "phone": "010-1234-5678"},
-    "P1002": {"patient_id": "P1002", "name": "이영희", "rrn": "880505-2345678", "phone": "010-2222-3333"},
+    "P1001": {
+        "patient_id": "P1001",
+        "name": "김민수",
+        "rrn": "900101-1234567",
+        "phone": "010-1234-5678",
+        "attending_doctor": "doctor_kim",
+        "attending_nurse": "nurse_lee",
+    },
+    "P1002": {
+        "patient_id": "P1002",
+        "name": "이영희",
+        "rrn": "880505-2345678",
+        "phone": "010-2222-3333",
+        "attending_doctor": "doctor_park",
+        "attending_nurse": "nurse_choi",
+    },
 }
 RECORDS = {
     "P1001": {"patient_id": "P1001", "diagnosis": "고혈압", "content": "3개월 약물치료 필요"},
@@ -60,3 +76,4 @@ def run_tool(name: str, arguments: dict):
     if fn is None:
         return {"error": f"알 수 없는 도구: {name}"}
     return fn(**arguments)
+    
