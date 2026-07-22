@@ -222,3 +222,413 @@ __marimo__/
 *.db
 .env
 node_modules/
+"""
+session_memory.py
+
+의료기관 보안 챗봇을 위한 세션 기반 메모리 관리 시스템
+
+구성 요소:
+1. RBAC Session Memory        - 역할 기반 세션 기억
+2. Incident Context Memory    - 조사 중인 사건 기억
+3. Topology Memory             - 의료 시스템 토폴로지 기억
+4. Security Policy Memory      - 보안 정책 컨텍스트 기억
+5. PHI Access Memory           - 민감정보 접근 추적 기억 (해시 기반 감사)
+
+설계 원칙:
+- 모든 메모리는 세션(session_id) 단위로 격리된다.
+- 세션 종료 시 민감 데이터(PHI 접근 목록 원본)는 즉시 파기되고,
+  감사 로그에는 해시값만 남는다.
+- 각 메모리 블록은 대략적인 용량 제한(요구사항 명시값)을 넘지 않도록
+  경고를 발생시킨다 (하드 리밋은 아니며, 운영 정책에 맞게 조정 가능).
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+import time
+import uuid
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+
+# --------------------------------------------------------------------------
+# 공통 유틸
+# --------------------------------------------------------------------------
+
+def _utf8_size(obj: Any) -> int:
+    """객체를 JSON 직렬화했을 때의 UTF-8 바이트 크기를 반환한다."""
+    try:
+        return len(json.dumps(obj, ensure_ascii=False, default=str).encode("utf-8"))
+    except (TypeError, ValueError):
+        return sys.getsizeof(obj)
+
+
+def _now() -> float:
+    return time.time()
+
+
+def _hash_value(value: str, salt: str = "") -> str:
+    """감사 로그용 단방향 해시 (SHA-256)."""
+    return hashlib.sha256(f"{salt}:{value}".encode("utf-8")).hexdigest()
+
+
+# --------------------------------------------------------------------------
+# 1. RBAC Session Memory
+# --------------------------------------------------------------------------
+
+class Role(str, Enum):
+    DOCTOR = "Doctor"
+    SECURITY_ANALYST = "Security Analyst"
+    NURSE = "Nurse"
+    IT_ADMIN = "IT Admin"
+    UNKNOWN = "Unknown"
+
+
+# 역할별로 노출할 기능 매핑
+ROLE_FEATURE_MAP: Dict[Role, List[str]] = {
+    Role.DOCTOR: [
+        "patient_lookup",
+        "diagnosis_support",
+        "prescription_assist",
+        "imaging_review",
+    ],
+    Role.SECURITY_ANALYST: [
+        "log_analysis",
+        "anomaly_detection",
+        "ioc_lookup",
+        "incident_response",
+    ],
+    Role.NURSE: [
+        "patient_lookup",
+        "vitals_recording",
+    ],
+    Role.IT_ADMIN: [
+        "system_status",
+        "log_analysis",
+        "access_control_management",
+    ],
+    Role.UNKNOWN: [],
+}
+
+
+@dataclass
+class RBACMemory:
+    role: Role = Role.UNKNOWN
+    capacity_warning_bytes: int = 100  # 50~100 Byte 권장
+
+    def set_role(self, role: str) -> None:
+        try:
+            self.role = Role(role)
+        except ValueError:
+            self.role = Role.UNKNOWN
+
+    def available_features(self) -> List[str]:
+        return ROLE_FEATURE_MAP.get(self.role, [])
+
+    def check_capacity(self) -> Optional[str]:
+        size = _utf8_size({"role": self.role.value})
+        if size > self.capacity_warning_bytes:
+            return f"[RBACMemory] 용량 초과 경고: {size} bytes"
+        return None
+
+
+# --------------------------------------------------------------------------
+# 2. Incident Context Memory
+# --------------------------------------------------------------------------
+
+@dataclass
+class Incident:
+    incident_id: str
+    target: str
+    severity: str
+    description: str = ""
+    related_ips: List[str] = field(default_factory=list)
+    iocs: List[str] = field(default_factory=list)
+    created_at: float = field(default_factory=_now)
+    updated_at: float = field(default_factory=_now)
+
+
+@dataclass
+class IncidentContextMemory:
+    active_incident: Optional[Incident] = None
+    capacity_warning_bytes: int = 2 * 1024  # 1~2KB 권장
+
+    def open_incident(self, incident_id: str, target: str, severity: str,
+                       description: str = "") -> Incident:
+        self.active_incident = Incident(
+            incident_id=incident_id,
+            target=target,
+            severity=severity,
+            description=description,
+        )
+        return self.active_incident
+
+    def add_ioc(self, ioc: str) -> None:
+        if self.active_incident is None:
+            raise ValueError("활성화된 사건이 없습니다.")
+        self.active_incident.iocs.append(ioc)
+        self.active_incident.updated_at = _now()
+
+    def add_related_ip(self, ip: str) -> None:
+        if self.active_incident is None:
+            raise ValueError("활성화된 사건이 없습니다.")
+        self.active_incident.related_ips.append(ip)
+        self.active_incident.updated_at = _now()
+
+    def summary(self) -> Optional[Dict[str, Any]]:
+        return asdict(self.active_incident) if self.active_incident else None
+
+    def check_capacity(self) -> Optional[str]:
+        if self.active_incident is None:
+            return None
+        size = _utf8_size(asdict(self.active_incident))
+        if size > self.capacity_warning_bytes:
+            return f"[IncidentContextMemory] 용량 초과 경고: {size} bytes"
+        return None
+
+
+# --------------------------------------------------------------------------
+# 3. 의료 시스템 토폴로지 메모리
+# --------------------------------------------------------------------------
+
+@dataclass
+class TopologyMemory:
+    # 인접 리스트 형태: {"PACS": ["EMR"], "EMR": ["HIS"], "HIS": ["Backup Server"]}
+    graph: Dict[str, List[str]] = field(default_factory=dict)
+    capacity_warning_bytes: int = 5 * 1024  # 2~5KB 권장
+
+    def load_chain(self, chain: List[str]) -> None:
+        """['PACS','EMR','HIS','Backup Server'] 같은 순차 체인을 그래프로 등록."""
+        self.graph = {}
+        for a, b in zip(chain, chain[1:]):
+            self.graph.setdefault(a, [])
+            if b not in self.graph[a]:
+                self.graph[a].append(b)
+            self.graph.setdefault(b, [])
+
+    def add_edge(self, src: str, dst: str) -> None:
+        self.graph.setdefault(src, [])
+        if dst not in self.graph[src]:
+            self.graph[src].append(dst)
+        self.graph.setdefault(dst, [])
+
+    def impact_scope(self, node: str) -> List[str]:
+        """node가 침해될 경우 영향을 받는 모든 다운스트림 시스템(BFS)."""
+        if node not in self.graph:
+            return []
+        visited: List[str] = []
+        queue = list(self.graph.get(node, []))
+        while queue:
+            cur = queue.pop(0)
+            if cur not in visited:
+                visited.append(cur)
+                queue.extend(self.graph.get(cur, []))
+        return visited
+
+    def check_capacity(self) -> Optional[str]:
+        size = _utf8_size(self.graph)
+        if size > self.capacity_warning_bytes:
+            return f"[TopologyMemory] 용량 초과 경고: {size} bytes"
+        return None
+
+
+# --------------------------------------------------------------------------
+# 4. 보안 정책 컨텍스트 메모리
+# --------------------------------------------------------------------------
+
+@dataclass
+class SecurityPolicyMemory:
+    mfa_enabled: Optional[bool] = None
+    network_segmentation: Optional[bool] = None
+    log_retention_days: Optional[int] = None
+    allowed_external_access: List[str] = field(default_factory=list)
+    capacity_warning_bytes: int = 1024  # 1KB 내외
+
+    def update(self, **kwargs: Any) -> None:
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+
+    def evaluate_external_vpn_request(self, requested_ip_or_group: str) -> str:
+        """기존 정책 기반으로 외부 VPN 접속 허용 여부를 판단하는 예시 로직."""
+        if not self.network_segmentation:
+            return ("주의: 망분리가 적용되어 있지 않아 외부 VPN 허용 시 "
+                    "내부망 전체 노출 위험이 있습니다. 승인 전 재검토가 필요합니다.")
+        if not self.mfa_enabled:
+            return "거부 권장: MFA가 비활성화되어 있어 외부 접속 허용 시 계정 탈취 위험이 큽니다."
+        if requested_ip_or_group in self.allowed_external_access:
+            return f"허용: '{requested_ip_or_group}'는 기존 허용 목록에 등록되어 있습니다."
+        return f"검토 필요: '{requested_ip_or_group}'는 허용 목록에 없어 추가 승인이 필요합니다."
+
+    def check_capacity(self) -> Optional[str]:
+        size = _utf8_size(asdict(self))
+        if size > self.capacity_warning_bytes:
+            return f"[SecurityPolicyMemory] 용량 초과 경고: {size} bytes"
+        return None
+
+
+# --------------------------------------------------------------------------
+# 5. 민감정보(PHI) 접근 추적 메모리
+# --------------------------------------------------------------------------
+
+@dataclass
+class PHIAccessMemory:
+    session_id: str
+    accessed_raw: List[str] = field(default_factory=list)         # 세션 중에만 존재
+    accessed_at: List[float] = field(default_factory=list)
+    capacity_warning_bytes: int = 10 * 1024  # 5~10KB 권장
+    anomaly_threshold: int = 5               # 동일 자산 재조회 임계값
+    _audit_log: List[Dict[str, str]] = field(default_factory=list, repr=False)
+
+    def record_access(self, asset_id: str) -> Optional[str]:
+        """자산 접근을 기록하고, 감사 로그에는 해시만 남긴다."""
+        self.accessed_raw.append(asset_id)
+        self.accessed_at.append(_now())
+
+        hashed = _hash_value(asset_id, salt=self.session_id)
+        self._audit_log.append({
+            "asset_hash": hashed,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()),
+        })
+
+        return self._check_repeated_access(asset_id)
+
+    def _check_repeated_access(self, asset_id: str) -> Optional[str]:
+        count = self.accessed_raw.count(asset_id)
+        if count >= self.anomaly_threshold:
+            return (f"[이상 접근 탐지] '{asset_id}' 자산이 세션 내에서 "
+                    f"{count}회 반복 조회되었습니다. 과도한 재조회 패턴입니다.")
+        return None
+
+    def current_session_view(self) -> List[str]:
+        """세션 진행 중 조회 가능한 원본 목록 (세션 종료 전까지만 유효)."""
+        return list(self.accessed_raw)
+
+    def audit_log(self) -> List[Dict[str, str]]:
+        """감사용 로그 - 해시값만 포함."""
+        return list(self._audit_log)
+
+    def purge(self) -> None:
+        """세션 종료 시 원본 데이터 즉시 파기. 감사 로그(해시)는 유지."""
+        self.accessed_raw.clear()
+        self.accessed_at.clear()
+
+    def check_capacity(self) -> Optional[str]:
+        size = _utf8_size(self.accessed_raw)
+        if size > self.capacity_warning_bytes:
+            return f"[PHIAccessMemory] 용량 초과 경고: {size} bytes"
+        return None
+
+
+# --------------------------------------------------------------------------
+# 세션 통합 관리자
+# --------------------------------------------------------------------------
+
+class SecuritySessionMemory:
+    """5가지 메모리 컴포넌트를 하나의 세션으로 통합 관리."""
+
+    def __init__(self, session_id: Optional[str] = None):
+        self.session_id = session_id or str(uuid.uuid4())
+        self.created_at = _now()
+        self.closed = False
+
+        self.rbac = RBACMemory()
+        self.incident = IncidentContextMemory()
+        self.topology = TopologyMemory()
+        self.policy = SecurityPolicyMemory()
+        self.phi = PHIAccessMemory(session_id=self.session_id)
+
+    # -- 편의 메서드 -------------------------------------------------
+
+    def set_role(self, role: str) -> None:
+        self.rbac.set_role(role)
+
+    def open_incident(self, incident_id: str, target: str, severity: str,
+                       description: str = "") -> Incident:
+        return self.incident.open_incident(incident_id, target, severity, description)
+
+    def load_topology_chain(self, chain: List[str]) -> None:
+        self.topology.load_chain(chain)
+
+    def set_policy(self, **kwargs: Any) -> None:
+        self.policy.update(**kwargs)
+
+    def access_phi(self, asset_id: str) -> Optional[str]:
+        return self.phi.record_access(asset_id)
+
+    def capacity_report(self) -> List[str]:
+        warnings = []
+        for memory in (self.rbac, self.incident, self.topology, self.policy, self.phi):
+            w = memory.check_capacity()
+            if w:
+                warnings.append(w)
+        return warnings
+
+    def close_session(self) -> Dict[str, Any]:
+        """세션 종료: PHI 원본 즉시 파기, 감사 로그(해시)만 반환."""
+        audit_log = self.phi.audit_log()
+        self.phi.purge()
+        self.closed = True
+        return {
+            "session_id": self.session_id,
+            "duration_sec": round(_now() - self.created_at, 2),
+            "phi_audit_log": audit_log,
+        }
+
+    def __repr__(self) -> str:
+        return (f"<SecuritySessionMemory session_id={self.session_id} "
+                f"role={self.rbac.role.value} closed={self.closed}>")
+
+
+# --------------------------------------------------------------------------
+# 사용 예시
+# --------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    session = SecuritySessionMemory()
+
+    # 1. 역할 기반 세션 기억
+    session.set_role("Security Analyst")
+    print("사용 가능 기능:", session.rbac.available_features())
+
+    # 2. 사건 컨텍스트 기억
+    session.open_incident(
+        incident_id="INC-240701",
+        target="EMR_DB_Server_03",
+        severity="High",
+        description="환자 DB 접근 이상 탐지",
+    )
+    session.incident.add_ioc("185.220.101.7")
+    session.incident.add_related_ip("10.10.5.22")
+    print("사건 요약:", session.incident.summary())
+
+    # 3. 토폴로지 기억
+    session.load_topology_chain(["PACS", "EMR", "HIS", "Backup Server"])
+    print("PACS 침해 시 영향 범위:", session.topology.impact_scope("PACS"))
+
+    # 4. 보안 정책 기억
+    session.set_policy(
+        mfa_enabled=True,
+        network_segmentation=False,
+        log_retention_days=90,
+        allowed_external_access=["203.0.113.10"],
+    )
+    print(session.policy.evaluate_external_vpn_request("198.51.100.5"))
+
+    # 5. PHI 접근 추적
+    for pid in ["Patient_Record_10452", "MRI_Image_2041",
+                "Patient_Record_10452", "Patient_Record_10452",
+                "Patient_Record_10452", "Patient_Record_10452"]:
+        alert = session.access_phi(pid)
+        if alert:
+            print(alert)
+
+    print("\n용량 경고:", session.capacity_report())
+
+    # 세션 종료 (PHI 원본 즉시 파기, 해시만 감사 로그로 남음)
+    closing_report = session.close_session()
+    print("\n세션 종료 리포트:", json.dumps(closing_report, indent=2, ensure_ascii=False))
+    print("종료 후 PHI 원본 목록:", session.phi.current_session_view())  # 빈 리스트여야 함
