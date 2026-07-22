@@ -58,3 +58,24 @@ class Tool(SQLModel, table=True):
     base_risk: str                                # low | medium | high
     enabled: bool = True
     allowed_roles: list = Field(default_factory=list, sa_column=Column(JSON))
+
+class Approval(SQLModel, table=True):
+    """
+    관리자 승인 대기 건. (=> '관리자 승인' 기능의 데이터 기반)
+    위험 점수가 승인 구간(60~79)이면 도구를 바로 실행하지 않고
+    이 표에 pending 으로 넣어 두고, 관리자가 승인/거부할 때까지 기다린다.
+    나중에 실행에 필요하므로 tool_name/arguments 도 함께 저장한다.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    event_id: int = Field(foreign_key="event.id")
+    session_id: str = Field(index=True)
+    tool_name: str
+    arguments: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    risk_score: int
+    reasons: list = Field(default_factory=list, sa_column=Column(JSON))
+    status: str = "pending"                  # pending | approved | rejected | expired
+    result: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 승인 후 실행 결과
+    requested_at: datetime = Field(default_factory=_now)
+    decided_at: Optional[datetime] = None
+    decided_by: Optional[str] = None
+    expires_at: datetime                     # 이 시각이 지나면 자동 거부(expired)
