@@ -8,20 +8,25 @@
   3. 세션 맥락(이전 호출들) 로드   ← 세션 기반 기억의 기초
   4. 툴 별 권한 검사              ← 1순위 기능
   5. 분석 -> 점수 -> 정책 결정
-  6. 허용이면 도구 실행(마스킹이면 결과를 가림, 담당 환자 여부까지 반영), 차단/승인이면 실행 안 함
+  6. 판정에 따라: 허용/마스킹은 실행(담당 환자 여부까지 반영), 승인은 대기 큐, 차단은 거부
   7. 이벤트(감사 로그) 저장 후 응답
 """
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import AgentSession, ToolCall, Event, Tool
+from app.models import AgentSession, ToolCall, Event, Tool, Approval
 from app.core import analyzers, scorer, policy
 from app.core.masking import mask_data
 from app.mcp_tools.registry import run_tool
 
 router = APIRouter()
+
+# 관리자 승인 대기 제한 시간(분). 이 시간이 지나면 자동 거부(expired).
+APPROVAL_TIMEOUT_MIN = 5
 
 
 class ToolCallRequest(BaseModel):
@@ -77,16 +82,41 @@ def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
     risk = scorer.score(signals)
     decision = policy.decide(risk, signals, req.tool)
 
-    # 6) 실행 (허용/경고/마스킹일 때만)
+    # 6) 판정에 따라 처리
     result = None
+    approval_id = None
+
     if decision.action in ("allow", "warn", "mask"):
+        # 허용/경고/마스킹 -> 도구 실행 (마스킹은 직군·담당 환자 여부까지 반영)
         result = run_tool(req.tool, req.arguments)
         result = mask_data(result, role=req.user_role, user_id=req.user_id)
+        event = _save_event(db, call, req, risk, decision.action,
+                            decision.reasons, decision.masked)
 
-    # 7) 이벤트 저장 + 응답
-    event = _save_event(db, call, req, risk, decision.action,
-                        decision.reasons, decision.masked)
-    return _response(event, result)
+    elif decision.action == "approve":
+        # 승인 필요 -> 실행하지 말고 대기 큐에 넣는다 (관리자 결정까지 보류)
+        event = _save_event(db, call, req, risk, "approve",
+                            decision.reasons, decision.masked)
+        approval = Approval(
+            event_id=event.id,
+            session_id=req.session_id,
+            tool_name=req.tool,
+            arguments=req.arguments,
+            risk_score=risk,
+            reasons=decision.reasons,
+            status="pending",
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=APPROVAL_TIMEOUT_MIN),
+        )
+        db.add(approval)
+        db.commit()
+        db.refresh(approval)
+        approval_id = approval.id
+
+    else:  # block
+        event = _save_event(db, call, req, risk, "block",
+                            decision.reasons, decision.masked)
+
+    return _response(event, result, approval_id)
 
 
 # ---- 내부 도우미 함수 --------------------------------------------------
@@ -101,7 +131,7 @@ def _save_event(db, call, req, risk, action, reasons, masked) -> Event:
     return event
 
 
-def _response(event: Event, result):
+def _response(event: Event, result, approval_id=None):
     return {
         "event_id": event.id,
         "decision": event.decision,
@@ -109,4 +139,5 @@ def _response(event: Event, result):
         "reasons": event.reasons,
         "masked": event.masked,
         "result": result,
+        "approval_id": approval_id,   # 승인 대기일 때만 값이 있음. 이 id로 상태를 조회한다.
     }
