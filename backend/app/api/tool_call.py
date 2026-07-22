@@ -8,7 +8,7 @@
   3. 세션 맥락(이전 호출들) 로드   ← 세션 기반 기억의 기초
   4. 툴 별 권한 검사              ← 1순위 기능
   5. 분석 -> 점수 -> 정책 결정
-  6. 허용이면 도구 실행(마스킹이면 결과를 가림), 차단/승인이면 실행 안 함
+  6. 허용이면 도구 실행(마스킹이면 결과를 가림, 담당 환자 여부까지 반영), 차단/승인이면 실행 안 함
   7. 이벤트(감사 로그) 저장 후 응답
 """
 from fastapi import APIRouter, Depends
@@ -29,7 +29,8 @@ class ToolCallRequest(BaseModel):
     user_request: str          # 사용자의 원래 의도
     tool: str                  # 호출할 도구 이름
     arguments: dict = {}       # 도구 인자
-    user_role: str = "doctor"  # 호출자 역할 (권한 검사용)
+    user_role: str = "doctor"  # 호출자 직군 (권한 검사 + 마스킹 등급 결정용)
+    user_id: str = ""          # 호출자 개인 식별자 (예: "doctor_kim") — 담당 환자 판단용
 
 
 @router.post("/v1/tool_call")
@@ -37,7 +38,7 @@ def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
     # 1) 세션이 없으면 생성
     sess = db.get(AgentSession, req.session_id)
     if not sess:
-        sess = AgentSession(id=req.session_id, user_id=req.user_role,
+        sess = AgentSession(id=req.session_id, user_id=req.user_id or req.user_role,
                             user_request=req.user_request)
         db.add(sess)
         db.commit()
@@ -81,7 +82,7 @@ def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
     if decision.action in ("allow", "warn", "mask"):
         result = run_tool(req.tool, req.arguments)
         if decision.action == "mask":
-            result = mask_data(result)
+            result = mask_data(result, role=req.user_role, user_id=req.user_id)
 
     # 7) 이벤트 저장 + 응답
     event = _save_event(db, call, req, risk, decision.action,
@@ -110,3 +111,4 @@ def _response(event: Event, result):
         "masked": event.masked,
         "result": result,
     }
+    
