@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from app.database import init_db
 from app.seed import seed_tools
 from app.api.tool_call import router as tool_call_router
-from app.api.approval import router as apporvals_router
+from app.api.approval import router as approvals_router
 
 
 @asynccontextmanager
