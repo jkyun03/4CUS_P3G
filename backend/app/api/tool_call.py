@@ -81,8 +81,7 @@ def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
     result = None
     if decision.action in ("allow", "warn", "mask"):
         result = run_tool(req.tool, req.arguments)
-        if decision.action == "mask":
-            result = mask_data(result, role=req.user_role, user_id=req.user_id)
+        result = mask_data(result, role=req.user_role, user_id=req.user_id)
 
     # 7) 이벤트 저장 + 응답
     event = _save_event(db, call, req, risk, decision.action,
@@ -111,4 +110,3 @@ def _response(event: Event, result):
         "masked": event.masked,
         "result": result,
     }
-    
