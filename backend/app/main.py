@@ -17,6 +17,8 @@ from app.api.approval import router as approvals_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.events import router as events_router
 from app.api.analytics import router as analytics_router
+from app.api.tools import router as tools_router
+from app.api.reports import router as reports_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +43,8 @@ app.include_router(tool_call_router)
 app.include_router(approvals_router)
 app.include_router(events_router)
 app.include_router(analytics_router)
+app.include_router(tools_router)
+app.include_router(reports_router)
 
 @app.get("/")
 def root():
