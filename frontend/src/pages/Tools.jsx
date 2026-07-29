@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { getJson, patchJson } from "../api.js";
 
-const ALL_ROLES = ["doctor", "nurse", "admin"];
+// masking.py의 FIELD_POLICY와 동일한 9개 직군
+const ALL_ROLES = [
+  "doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
+  "security_officer", "system_admin", "intern", "hospital_admin",
+];
 
 // 도구 관리: /tools 목록을 표로 보여주고, 토글로 on/off, 직군 칩으로 권한을 바꾼다.
 export default function Tools() {
@@ -11,7 +15,6 @@ export default function Tools() {
   const load = () => getJson("/tools").then(setTools).catch((e) => setError(e.message));
   useEffect(() => { load(); }, []);
 
-  // 도구 켜기/끄기
   const toggleEnabled = async (t) => {
     try {
       await patchJson("/tools/" + t.name, { enabled: !t.enabled });
@@ -19,7 +22,6 @@ export default function Tools() {
     } catch (e) { setError(e.message); }
   };
 
-  // 허용 직군에서 해당 역할을 넣거나 뺀다
   const toggleRole = async (t, role) => {
     const roles = t.allowed_roles.includes(role)
       ? t.allowed_roles.filter((r) => r !== role)
@@ -58,7 +60,7 @@ export default function Tools() {
                   </button>
                 </td>
                 <td>
-                  <div className="role-chips">
+                  <div className="role-chips" style={{ flexWrap: "wrap" }}>
                     {ALL_ROLES.map((role) => (
                       <button
                         key={role}
@@ -85,3 +87,4 @@ export default function Tools() {
 function riskLabel(r) {
   return { low: "낮음", medium: "중간", high: "높음" }[r] || r;
 }
+

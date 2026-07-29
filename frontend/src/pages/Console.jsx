@@ -2,7 +2,11 @@ import { useState } from "react";
 import { postJson } from "../api.js";
 import RiskBadge from "../components/RiskBadge.jsx";
 
-// 미리 정의된 시나리오(도구 호출 순서). 실행하면 이 순서대로 백엔드에 보낸다.
+const ROLES = [
+  "doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
+  "security_officer", "system_admin", "intern", "hospital_admin",
+];
+
 const SCENARIOS = {
   "정상": {
     request: "김민수 환자의 다음 예약 시간을 알려줘",
@@ -28,12 +32,19 @@ const SCENARIOS = {
       { tool: "export_csv", arguments: {} },
     ],
   },
+  "담당 환자 vs 비담당": {
+    request: "진료기록 확인",
+    steps: [
+      { tool: "get_medical_record", arguments: { patient_id: "P1001" } },
+      { tool: "get_medical_record", arguments: { patient_id: "P1002" } },
+    ],
+  },
 };
 
-// 시연 콘솔: 시나리오를 골라 실행하면 도구 호출 흐름과 판정을 보여준다.
 export default function Console() {
   const [selected, setSelected] = useState("위험 1 · 외부전송");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("doctor");
+  const [userId, setUserId] = useState("doctor_kim");
   const [steps, setSteps] = useState([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +54,7 @@ export default function Console() {
     setSteps([]);
     setRunning(true);
     const scenario = SCENARIOS[selected];
-    const sessionId = "CONSOLE-" + Date.now(); // 매번 새 세션으로 실행
+    const sessionId = "CONSOLE-" + Date.now();
     const results = [];
     try {
       for (const step of scenario.steps) {
@@ -53,9 +64,10 @@ export default function Console() {
           tool: step.tool,
           arguments: step.arguments,
           user_role: role,
+          user_id: userId,
         });
         results.push({ tool: step.tool, ...r });
-        setSteps([...results]); // 한 단계씩 화면 갱신
+        setSteps([...results]);
       }
     } catch (e) {
       setError(e.message);
@@ -85,11 +97,21 @@ export default function Console() {
 
       <div className="console-run">
         <div className="console-request">"{SCENARIOS[selected].request}"</div>
+
         <select className="role-select" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="doctor">doctor</option>
-          <option value="nurse">nurse</option>
-          <option value="admin">admin</option>
+          {ROLES.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
         </select>
+
+        <input
+          className="console-request"
+          style={{ flex: "none", width: 140 }}
+          placeholder="user_id"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+        />
+
         <button className="btn-primary" onClick={run} disabled={running}>
           {running ? "실행 중…" : "실행"}
         </button>
