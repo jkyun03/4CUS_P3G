@@ -47,9 +47,9 @@ export default function Analytics() {
         <a className="btn-primary" href={API_BASE + "/reports/events.csv"} download>
           CSV 내보내기
         </a>
-        <button className="btn-secondary" style={{ marginLeft: 8 }} disabled>
-          PDF 내보내기 (준비 중)
-        </button>
+        <a className="btn-secondary" style={{ marginLeft: 8 }} href={API_BASE + "/reports/events.pdf"} download>
+          PDF 내보내기
+        </a>
       </div>
     </div>
   );
