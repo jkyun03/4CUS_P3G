@@ -25,3 +25,14 @@ export function openApprovalsSocket(onMessage) {
   ws.onmessage = (e) => onMessage(JSON.parse(e.data));
   return ws;
 }
+
+// PATCH 요청 (일부 수정)
+export async function patchJson(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("요청 실패: " + res.status);
+  return res.json();
+}

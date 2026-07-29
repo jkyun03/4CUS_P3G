@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getJson } from "../api.js";
+import { getJson, API_BASE } from "../api.js";
 
 // 분석·리포트: /analytics/summary 를 불러와 통계를 보여준다.
 export default function Analytics() {
@@ -41,10 +41,15 @@ export default function Analytics() {
 
       <div className="card" style={{ marginTop: 12 }}>
         <div className="card-title">리포트 내보내기</div>
-        <div className="empty" style={{ padding: "4px 0" }}>
-          CSV · PDF · 컴플라이언스 리포트는 리포트 2단계에서 추가 예정입니다.
+        <div className="empty" style={{ padding: "0 0 10px" }}>
+          지금까지 쌓인 이벤트를 파일로 내려받습니다.
         </div>
-        <button className="btn-secondary" disabled>리포트 생성 (준비 중)</button>
+        <a className="btn-primary" href={API_BASE + "/reports/events.csv"} download>
+          CSV 내보내기
+        </a>
+        <button className="btn-secondary" style={{ marginLeft: 8 }} disabled>
+          PDF 내보내기 (준비 중)
+        </button>
       </div>
     </div>
   );
