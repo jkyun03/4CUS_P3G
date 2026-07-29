@@ -14,7 +14,7 @@
 """
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -23,6 +23,43 @@ from app.models import Approval
 from app.mcp_tools.registry import run_tool
 
 router = APIRouter()
+
+
+class ApprovalConnectionManager:
+    """승인 큐 화면이 열려 있는 동안, 새 승인 요청을 실시간으로 알려주는 WebSocket 목록."""
+
+    def __init__(self) -> None:
+        self.active: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket) -> None:
+        await websocket.accept()
+        self.active.append(websocket)
+
+    def disconnect(self, websocket: WebSocket) -> None:
+        if websocket in self.active:
+            self.active.remove(websocket)
+
+    async def broadcast(self, message: dict) -> None:
+        for ws in list(self.active):
+            try:
+                await ws.send_json(message)
+            except Exception:
+                self.disconnect(ws)
+
+
+# tool_call.py 에서 새 승인 요청이 생길 때마다 이 매니저로 브로드캐스트한다.
+manager = ApprovalConnectionManager()
+
+
+@router.websocket("/ws/approvals")
+async def approvals_ws(websocket: WebSocket):
+    """관리자 화면(승인 큐)이 새 승인 요청을 실시간으로 받는 채널."""
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()   # 프론트에서 보내는 건 없음, 연결 유지 + 끊김 감지용
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 
 def _now() -> datetime:

@@ -22,6 +22,7 @@ from app.models import AgentSession, ToolCall, Event, Tool, Approval
 from app.core import analyzers, scorer, policy
 from app.core.masking import mask_data
 from app.mcp_tools.registry import run_tool
+from app.api.approval import manager as approval_manager
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ class ToolCallRequest(BaseModel):
 
 
 @router.post("/v1/tool_call")
-def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
+async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
     # 1) 세션이 없으면 생성
     sess = db.get(AgentSession, req.session_id)
     if not sess:
@@ -111,6 +112,14 @@ def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_session)):
         db.commit()
         db.refresh(approval)
         approval_id = approval.id
+
+        # 관리자 승인 큐 화면에 실시간으로 알림
+        await approval_manager.broadcast({
+            "type": "new_approval",
+            "approval_id": approval.id,
+            "tool": req.tool,
+            "risk_score": risk,
+        })
 
     else:  # block
         event = _save_event(db, call, req, risk, "block",
