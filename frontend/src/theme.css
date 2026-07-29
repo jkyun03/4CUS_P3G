@@ -186,3 +186,19 @@ a { text-decoration: none; color: inherit; }
 .flow-arrow { color: #aeb9c4; }
 .detail-score { font-size: 18px; font-weight: 600; }
 .detail-reasons { font-size: 12px; color: var(--text-2); line-height: 1.8; }
+
+/* ================= 도구 관리 ================= */
+.tools-table { width: 100%; border-collapse: collapse; }
+.tools-table th { text-align: left; font-size: 11px; color: var(--text-2); font-weight: 500; padding: 11px 16px; }
+.tools-table td { font-size: 12px; padding: 11px 16px; border-top: 0.5px solid #eef1f4; vertical-align: middle; }
+.risk-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+.risk-low { background: #e6ebf0; color: #4a5a66; }
+.risk-medium { background: #fbeeda; color: #854f0b; }
+.risk-high { background: #fde0d4; color: #993c1d; }
+.toggle { width: 38px; height: 21px; border-radius: 20px; border: none; background: #cfd8e0; position: relative; cursor: pointer; padding: 0; }
+.toggle.on { background: var(--brand); }
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.toggle.on .toggle-knob { left: 19px; }
+.role-chips { display: flex; gap: 5px; }
+.role-chip { font-size: 11px; padding: 3px 9px; border-radius: 20px; border: 0.5px solid #cfd8e0; background: #fff; color: #aeb9c4; cursor: pointer; }
+.role-chip.on { background: rgba(255,70,40,0.1); border-color: var(--brand); color: var(--brand); }
