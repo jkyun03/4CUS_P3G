@@ -14,6 +14,8 @@ from app.database import init_db
 from app.seed import seed_tools
 from app.api.tool_call import router as tool_call_router
 from app.api.approval import router as approvals_router
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.events import router as events_router
 
 
 @asynccontextmanager
@@ -27,10 +29,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="IDEA Gateway", version="0.1", lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # 라우터 등록
 app.include_router(tool_call_router)
 app.include_router(approvals_router)
-
+app.include_router(events_router)
 
 @app.get("/")
 def root():
