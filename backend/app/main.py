@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.database import init_db
-from app.seed import seed_tools
+from app.seed import seed_tools, seed_thresholds
 from app.api.tool_call import router as tool_call_router
 from app.api.approval import router as approvals_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,12 +19,14 @@ from app.api.events import router as events_router
 from app.api.analytics import router as analytics_router
 from app.api.tools import router as tools_router
 from app.api.reports import router as reports_router
+from app.api.rules import router as rules_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시: 테이블 생성 + 초기 도구 목록 삽입
     init_db()
     seed_tools()
+    seed_thresholds()   
     yield
     # (서버 종료 시 정리할 게 있으면 여기에)
 
@@ -45,6 +47,7 @@ app.include_router(events_router)
 app.include_router(analytics_router)
 app.include_router(tools_router)
 app.include_router(reports_router)
+app.include_router(rules_router)
 
 @app.get("/")
 def root():

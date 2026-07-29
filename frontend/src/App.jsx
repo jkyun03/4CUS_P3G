@@ -8,6 +8,7 @@ import Logs from "./pages/Logs.jsx";
 import Analytics from "./pages/Analytics.jsx";
 import Placeholder from "./pages/Placeholder.jsx";
 import Tools from "./pages/Tools.jsx";
+import Policy from "./pages/Policy.jsx";
 
 // 화면 이동(라우팅) 규칙
 export default function App() {
@@ -25,7 +26,7 @@ export default function App() {
         <Route path="/logs" element={<Logs />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/tools" element={<Tools />} />
-        <Route path="/policy" element={<Placeholder title="정책 설정" />} />
+        <Route path="/policy" element={<Policy />} />
       </Route>
     </Routes>
   );

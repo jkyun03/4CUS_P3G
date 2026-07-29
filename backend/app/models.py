@@ -79,3 +79,10 @@ class Approval(SQLModel, table=True):
     decided_at: Optional[datetime] = None
     decided_by: Optional[str] = None
     expires_at: datetime                     # 이 시각이 지나면 자동 거부(expired)
+    
+class PolicyThreshold(SQLModel, table=True):
+        # 항상 id=1 한 행만 사용한다. 판정 구간 경계값.
+        id: int = Field(default=1, primary_key=True)
+        warn: int = 30       # 이 점수 이상이면 경고
+        approve: int = 60    # 이 점수 이상이면 승인 필요
+        block: int = 80      # 이 점수 이상이면 차단
