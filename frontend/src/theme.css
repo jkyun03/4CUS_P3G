@@ -202,3 +202,19 @@ a { text-decoration: none; color: inherit; }
 .role-chips { display: flex; gap: 5px; }
 .role-chip { font-size: 11px; padding: 3px 9px; border-radius: 20px; border: 0.5px solid #cfd8e0; background: #fff; color: #aeb9c4; cursor: pointer; }
 .role-chip.on { background: rgba(255,70,40,0.1); border-color: var(--brand); color: var(--brand); }
+
+/* ================= 정책 설정 ================= */
+.policy-desc { font-size: 12px; color: var(--text-2); margin: 0 0 16px; }
+.range-bar { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+.seg { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; min-width: 0; overflow: hidden; }
+.seg-allow { background: #9aa7b2; }
+.seg-warn { background: #efb44d; }
+.seg-approve { background: #f0916a; }
+.seg-block { background: var(--brand); }
+.policy-fields { display: flex; gap: 14px; flex-wrap: wrap; }
+.policy-field { display: flex; flex-direction: column; gap: 5px; }
+.policy-field label { font-size: 11px; color: var(--text-2); }
+.policy-field input { width: 120px; height: 36px; border: 0.5px solid #cfd8e0; border-radius: 8px; padding: 0 12px; font-size: 14px; }
+.policy-field input:focus { border-color: var(--brand); outline: none; }
+.policy-error { color: #993c1d; background: #fde0d4; border-radius: 8px; padding: 9px 12px; font-size: 12px; margin-top: 14px; }
+.policy-saved { color: #1f7a3d; font-size: 12px; margin-top: 14px; }

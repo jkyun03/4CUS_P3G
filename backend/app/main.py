@@ -21,6 +21,7 @@ from app.api.events import router as events_router
 from app.api.analytics import router as analytics_router
 from app.api.tools import router as tools_router
 from app.api.reports import router as reports_router
+from app.api.rules import router as rules_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,6 +53,7 @@ app.include_router(events_router)
 app.include_router(analytics_router)
 app.include_router(tools_router)
 app.include_router(reports_router)
+app.include_router(rules_router)
 
 @app.get("/")
 def root():

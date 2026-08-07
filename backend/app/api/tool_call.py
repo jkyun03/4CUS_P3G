@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import AgentSession, ToolCall, Event, Tool, Approval
+from app.models import AgentSession, ToolCall, Event, Tool, Approval, PolicyThreshold
 from app.core import analyzers, scorer, policy
 from app.core.masking import mask_data
 from app.mcp_tools.registry import run_tool, TOOL_FUNCTIONS
@@ -83,7 +83,9 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
     signals = analyzers.analyze(req.tool, req.arguments, req.user_request,
                                 history_names, history_calls=history_calls)
     risk = scorer.score(signals)
-    decision = policy.decide(risk, signals, req.tool)
+    th = db.get(PolicyThreshold, 1)
+    thresholds = policy.Thresholds(warn=th.warn, approve=th.approve, block=th.block) if th else None
+    decision = policy.decide(risk, signals, req.tool, thresholds)
 
     # 6) 판정에 따라 처리
     result = None

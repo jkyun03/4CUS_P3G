@@ -4,7 +4,7 @@
 from sqlmodel import Session, select
 
 from app.database import engine
-from app.models import Tool
+from app.models import Tool, PolicyThreshold
 
 ALL_ROLES = ["doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
              "security_officer", "system_admin", "intern", "hospital_admin"]
@@ -31,3 +31,8 @@ def seed_tools() -> None:
                 session.add(Tool(**t))
         session.commit()
         
+def seed_thresholds():
+    with Session(engine) as s:
+        if not s.get(PolicyThreshold, 1):
+            s.add(PolicyThreshold(id=1))  # 기본값(30/60/80)으로 한 행 생성
+            s.commit()
