@@ -19,7 +19,7 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.models import AgentSession, ToolCall, Event, Tool, Approval, PolicyThreshold
-from app.core import analyzers, scorer, policy
+from app.core import analyzers, scorer, policy, tool_integrity, prompt_injection
 from app.core.masking import mask_data
 from app.mcp_tools.registry import run_tool, TOOL_FUNCTIONS
 from app.api.approval import manager as approval_manager
@@ -74,6 +74,19 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
         permission_reason = f"비활성화된 도구: {req.tool}"
     elif tool_row.allowed_roles and req.user_role not in tool_row.allowed_roles:
         permission_reason = f"권한 없음: '{req.user_role}' 역할은 {req.tool} 호출 불가"
+    else:
+        # 4-1) 툴 포이즈닝 검사: 설명에 숨은 지시문 + 최초 등록 이후 몰래 변조(rug-pull) 여부
+        if tool_integrity.scan_description(tool_row.description):
+            permission_reason = f"도구 설명에 숨겨진 지시문 의심 패턴 포함: {req.tool}"
+        else:
+            tamper_reason, current_hash = tool_integrity.check_tampering(
+                tool_row.name, tool_row.description, tool_row.signature_hash)
+            if tamper_reason:
+                permission_reason = tamper_reason
+            elif tool_row.signature_hash is None:
+                tool_row.signature_hash = current_hash
+                db.add(tool_row)
+                db.commit()
 
     if permission_reason:
         event = _save_event(db, call, req, 100, "block", [permission_reason], False)
@@ -94,10 +107,21 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
     if decision.action in ("allow", "warn", "mask"):
         # 허용/경고/마스킹 -> 도구 실행 (마스킹은 직군·담당 환자 여부까지 반영)
         result = await run_tool(req.tool, req.arguments)
+
+        # 간접 프롬프트 인젝션: 도구가 반환한 데이터 안에 지시문이 숨어있을 수 있다.
+        # 에이전트가 이 결과를 '지시'로 착각해 따르지 않도록 무해화(redact)한다.
+        reasons = list(decision.reasons)
+        audit_risk = risk
+        injection_hits = prompt_injection.scan_value(result)
+        if injection_hits:
+            result = prompt_injection.redact(result)
+            reasons.append(f"도구 실행 결과에서 프롬프트 인젝션 의심 패턴 탐지·제거 ({len(injection_hits)}건)")
+            audit_risk = min(risk + 45, 100)
+
         if req.tool in TOOL_FUNCTIONS:   # 병원 mock 도구일 때만 필드명 기반 마스킹 적용
             result = mask_data(result, role=req.user_role, user_id=req.user_id)
-        event = _save_event(db, call, req, risk, decision.action,
-                            decision.reasons, decision.masked)
+        event = _save_event(db, call, req, audit_risk, decision.action,
+                            reasons, decision.masked)
 
     elif decision.action == "approve":
         # 승인 필요 -> 실행하지 말고 대기 큐에 넣는다 (관리자 결정까지 보류)
