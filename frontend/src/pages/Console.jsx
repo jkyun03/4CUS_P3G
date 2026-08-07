@@ -39,6 +39,12 @@ const SCENARIOS = {
       { tool: "get_medical_record", arguments: { patient_id: "P1002" } },
     ],
   },
+  "FHIR · 실제 서버 환자 검색": {
+    request: "FHIR 서버에서 Smith 성을 가진 환자를 검색해줘",
+    steps: [
+      { tool: "search", arguments: { type: "Patient", searchParam: { family: "Smith" } } },
+    ],
+  },
 };
 
 export default function Console() {
