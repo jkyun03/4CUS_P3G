@@ -108,7 +108,13 @@ TOOL_FUNCTIONS = {
 }
 
 
-def run_tool(name: str, arguments: dict):
+async def run_tool(name: str, arguments: dict):
+    # 실제 MCP 서버가 연결돼 있고, 그쪽에 이 도구가 있으면 그쪽으로 위임
+    from app.mcp_tools.mcp_client import mcp_client
+    if mcp_client.connected and mcp_client.has_tool(name):
+        return await mcp_client.call_tool(name, arguments)
+
+    # 아니면 지금까지 쓰던 mock으로 폴백
     fn = TOOL_FUNCTIONS.get(name)
     if fn is None:
         return {"error": f"알 수 없는 도구: {name}"}

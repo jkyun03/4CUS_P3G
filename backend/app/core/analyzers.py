@@ -30,8 +30,29 @@ def _is_external_email(to: str) -> bool:
     return "@" in to and not to.endswith("@" + INTERNAL_DOMAIN)
 
 
+# --- FHIR MCP (WSO2 fhir-mcp-server) 도구용 -------------------------------
+SENSITIVE_FHIR_RESOURCE_TYPES = {
+    "Patient", "Observation", "Condition", "MedicationRequest",
+    "AllergyIntolerance", "DiagnosticReport", "Immunization",
+    "FamilyMemberHistory", "DocumentReference", "Encounter",
+}
+FHIR_READ_TOOLS = {"read", "search"}
+FHIR_WRITE_TOOLS = {"create", "update"}
+FHIR_DESTRUCTIVE_TOOLS = {"delete"}
+
+
+def _fhir_resource_type(arguments: dict) -> str:
+    # fhir-mcp-server(WSO2)의 실제 인자 키는 "type" (예: {"type": "Patient", ...})
+    return str(arguments.get("type") or arguments.get("resource_type") or arguments.get("resourceType") or "")
+
+
+def _is_sensitive_fhir_read(tool_name: str, arguments: dict) -> bool:
+    return tool_name in FHIR_READ_TOOLS and _fhir_resource_type(arguments) in SENSITIVE_FHIR_RESOURCE_TYPES
+
+
 def analyze(tool_name: str, arguments: dict, user_request: str,
-            history_tool_names: list[str]) -> list[RiskSignal]:
+            history_tool_names: list[str],
+            history_calls: list[tuple[str, dict]] | None = None) -> list[RiskSignal]:
     """위험 신호 리스트를 반환한다(없으면 빈 리스트)."""
     signals: list[RiskSignal] = []
 
@@ -67,5 +88,28 @@ def analyze(tool_name: str, arguments: dict, user_request: str,
     read_count += 1 if tool_name in SENSITIVE_READ_TOOLS else 0
     if read_count >= 3:
         signals.append(RiskSignal("mass_access", 35, f"진료기록 대량 조회 ({read_count}건)"))
+
+    # 6) FHIR: 민감 리소스(Patient/Observation 등) 조회
+    if _is_sensitive_fhir_read(tool_name, arguments):
+        signals.append(RiskSignal("fhir_sensitive_read", 25,
+                        f"민감 FHIR 리소스 조회: {_fhir_resource_type(arguments)}"))
+
+    # 7) FHIR: 생성/수정
+    if tool_name in FHIR_WRITE_TOOLS:
+        signals.append(RiskSignal("fhir_write", 20,
+                        f"FHIR 리소스 변경({tool_name}): {_fhir_resource_type(arguments)}"))
+
+    # 8) FHIR: 삭제 (항상 고위험)
+    if tool_name in FHIR_DESTRUCTIVE_TOOLS:
+        signals.append(RiskSignal("fhir_delete", 50,
+                        f"FHIR 리소스 삭제: {_fhir_resource_type(arguments)}"))
+
+    # 9) FHIR: 민감 리소스 대량 조회 (세션 내 3건 이상)
+    if history_calls is not None:
+        fhir_read_count = sum(1 for n, a in history_calls if _is_sensitive_fhir_read(n, a))
+        fhir_read_count += 1 if _is_sensitive_fhir_read(tool_name, arguments) else 0
+        if fhir_read_count >= 3:
+            signals.append(RiskSignal("fhir_mass_access", 35,
+                            f"민감 FHIR 리소스 대량 조회 ({fhir_read_count}건)"))
 
     return signals

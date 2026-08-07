@@ -11,7 +11,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.database import init_db
-from app.seed import seed_tools, seed_thresholds
+from app.seed import seed_tools
+from app.mcp_tools.mcp_client import mcp_client
+from app.mcp_tools.sync import sync_real_tools
 from app.api.tool_call import router as tool_call_router
 from app.api.approval import router as approvals_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,9 +28,13 @@ async def lifespan(app: FastAPI):
     # 서버 시작 시: 테이블 생성 + 초기 도구 목록 삽입
     init_db()
     seed_tools()
-    seed_thresholds()   
+    try:
+        await mcp_client.connect()
+        await sync_real_tools()
+    except Exception as e:
+        print(f"[MCP] 실제 서버 연결 실패, mock으로 동작: {e}")
     yield
-    # (서버 종료 시 정리할 게 있으면 여기에)
+    await mcp_client.disconnect()
 
 
 app = FastAPI(title="IDEA Gateway", version="0.1", lifespan=lifespan)

@@ -21,7 +21,7 @@ from app.database import get_session
 from app.models import AgentSession, ToolCall, Event, Tool, Approval, PolicyThreshold
 from app.core import analyzers, scorer, policy
 from app.core.masking import mask_data
-from app.mcp_tools.registry import run_tool
+from app.mcp_tools.registry import run_tool, TOOL_FUNCTIONS
 from app.api.approval import manager as approval_manager
 
 router = APIRouter()
@@ -63,6 +63,7 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
         .where(ToolCall.id < call.id)
     ).all()
     history_names = [c.tool_name for c in history]
+    history_calls = [(c.tool_name, c.arguments) for c in history]
 
     # 4) 툴 별 권한 검사 (여기서 걸리면 분석 없이 즉시 차단)
     tool_row = db.exec(select(Tool).where(Tool.name == req.tool)).first()
@@ -79,7 +80,8 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
         return _response(event, None)
 
     # 5) 분석 -> 점수 -> 정책
-    signals = analyzers.analyze(req.tool, req.arguments, req.user_request, history_names)
+    signals = analyzers.analyze(req.tool, req.arguments, req.user_request,
+                                history_names, history_calls=history_calls)
     risk = scorer.score(signals)
     th = db.get(PolicyThreshold, 1)
     thresholds = policy.Thresholds(warn=th.warn, approve=th.approve, block=th.block) if th else None
@@ -91,8 +93,9 @@ async def handle_tool_call(req: ToolCallRequest, db: Session = Depends(get_sessi
 
     if decision.action in ("allow", "warn", "mask"):
         # 허용/경고/마스킹 -> 도구 실행 (마스킹은 직군·담당 환자 여부까지 반영)
-        result = run_tool(req.tool, req.arguments)
-        result = mask_data(result, role=req.user_role, user_id=req.user_id)
+        result = await run_tool(req.tool, req.arguments)
+        if req.tool in TOOL_FUNCTIONS:   # 병원 mock 도구일 때만 필드명 기반 마스킹 적용
+            result = mask_data(result, role=req.user_role, user_id=req.user_id)
         event = _save_event(db, call, req, risk, decision.action,
                             decision.reasons, decision.masked)
 

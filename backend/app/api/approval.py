@@ -107,7 +107,7 @@ class DecideRequest(BaseModel):
 
 
 @router.post("/approvals/{approval_id}/decide")
-def decide_approval(approval_id: int, body: DecideRequest,
+async def decide_approval(approval_id: int, body: DecideRequest,
                     db: Session = Depends(get_session)):
     """관리자가 승인/거부. 승인이면 여기서 도구를 실행한다."""
     ap = db.get(Approval, approval_id)
@@ -120,7 +120,7 @@ def decide_approval(approval_id: int, body: DecideRequest,
                             detail=f"이미 처리된 요청입니다 (상태: {ap.status})")
 
     if body.decision == "approve":
-        ap.result = run_tool(ap.tool_name, ap.arguments)   # 승인 시점에 실제 실행
+        ap.result = await run_tool(ap.tool_name, ap.arguments)   # 승인 시점에 실제 실행
         ap.status = "approved"
     elif body.decision == "reject":
         ap.status = "rejected"
