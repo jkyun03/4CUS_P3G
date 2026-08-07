@@ -99,6 +99,17 @@ def export_csv(**_):
     return {"status": "exported", "file": "records.csv"}
 
 
+# ---- 도구 설명 (LLM/에이전트에게 그대로 노출되는 텍스트) --------------------
+# 툴 포이즈닝 탐지(core/tool_integrity.py)가 이 텍스트를 스캔하고 지문을 남긴다.
+TOOL_DESCRIPTIONS = {
+    "search_patient": "이름으로 환자를 검색한다. 입력: name(환자 이름).",
+    "get_appointment": "환자의 다음 예약 일정을 조회한다. 입력: patient_id.",
+    "get_medical_record": "환자의 진료기록(진단명/소견)을 조회한다. 입력: patient_id.",
+    "send_email": "지정한 주소로 이메일을 발송한다. 입력: to(수신자), body(본문).",
+    "export_csv": "환자 데이터를 CSV 파일로 내보낸다.",
+}
+
+
 TOOL_FUNCTIONS = {
     "search_patient": search_patient,
     "get_appointment": get_appointment,

@@ -21,6 +21,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Approval
 from app.mcp_tools.registry import run_tool
+from app.core import prompt_injection
 
 router = APIRouter()
 
@@ -120,7 +121,11 @@ async def decide_approval(approval_id: int, body: DecideRequest,
                             detail=f"이미 처리된 요청입니다 (상태: {ap.status})")
 
     if body.decision == "approve":
-        ap.result = await run_tool(ap.tool_name, ap.arguments)   # 승인 시점에 실제 실행
+        result = await run_tool(ap.tool_name, ap.arguments)   # 승인 시점에 실제 실행
+        # 간접 프롬프트 인젝션: 결과 안에 지시문이 숨어있으면 에이전트에게 넘기기 전에 무해화한다.
+        if prompt_injection.scan_value(result):
+            result = prompt_injection.redact(result)
+        ap.result = result
         ap.status = "approved"
     elif body.decision == "reject":
         ap.status = "rejected"

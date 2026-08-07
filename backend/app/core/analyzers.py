@@ -9,6 +9,8 @@
 """
 from dataclasses import dataclass
 
+from app.core import prompt_injection
+
 
 @dataclass
 class RiskSignal:
@@ -111,5 +113,11 @@ def analyze(tool_name: str, arguments: dict, user_request: str,
         if fhir_read_count >= 3:
             signals.append(RiskSignal("fhir_mass_access", 35,
                             f"민감 FHIR 리소스 대량 조회 ({fhir_read_count}건)"))
+
+    # 10) 프롬프트 인젝션: 사용자 요청 또는 도구 인자에 지시문 재정의/탈옥 패턴
+    injection_hits = prompt_injection.scan(user_request) + prompt_injection.scan_value(arguments)
+    if injection_hits:
+        signals.append(RiskSignal("prompt_injection", 45,
+                                   f"프롬프트 인젝션 의심 패턴 탐지 ({len(injection_hits)}건)"))
 
     return signals

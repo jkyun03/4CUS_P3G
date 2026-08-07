@@ -23,6 +23,22 @@ def init_db() -> None:
     # models를 import 해야 SQLModel이 어떤 테이블을 만들지 알 수 있다.
     import app.models  # noqa: F401
     SQLModel.metadata.create_all(engine)
+    _add_missing_columns()
+
+
+def _add_missing_columns() -> None:
+    """
+    이미 만들어진 SQLite 파일에 새 컬럼이 없으면 추가한다.
+    create_all()은 없는 '테이블'만 만들어주고, 기존 테이블에 컬럼을 추가해주지는 않기 때문.
+    (예: 툴 포이즈닝 탐지를 위해 tool 테이블에 description/signature_hash를 나중에 추가한 경우)
+    """
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(tool)").fetchall()}
+        if "description" not in existing:
+            conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN description TEXT DEFAULT ''")
+        if "signature_hash" not in existing:
+            conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN signature_hash TEXT")
+        conn.commit()
 
 
 def get_session():
