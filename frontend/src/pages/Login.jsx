@@ -1,10 +1,23 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
+import { login } from "../api.js";
 
-// 진입 화면(로그인). 아직 로그인 API가 없으므로 버튼을 누르면 대시보드로 이동한다.
 export default function Login() {
   const navigate = useNavigate();
-  const handleLogin = () => navigate("/dashboard");
+  const [username, setUsername] = useState("doctor_kim");
+  const [password, setPassword] = useState("pass1234");
+  const [error, setError] = useState("");
+
+  const handleLogin = async () => {
+    setError("");
+    try {
+      await login(username, password);
+      navigate("/dashboard");
+    } catch (e) {
+      setError("아이디 또는 비밀번호가 올바르지 않습니다.");
+    }
+  };
 
   return (
     <div className="login-page">
@@ -16,14 +29,19 @@ export default function Login() {
         </div>
 
         <label className="field-label">아이디</label>
-        <input className="field" placeholder="admin@hospital.org" />
+        <input className="field" value={username} onChange={(e) => setUsername(e.target.value)} />
 
         <label className="field-label">비밀번호</label>
-        <input className="field" type="password" placeholder="********" />
+        <input className="field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+
+        {error && <div className="error-box" style={{ marginBottom: 12 }}>{error}</div>}
 
         <button className="btn-primary btn-full" onClick={handleLogin}>로그인</button>
-        <div className="login-note">권한이 없는 사용자는 접근할 수 없습니다</div>
+        <div className="login-note">
+          데모 계정: doctor_kim / nurse_lee / pharm01 / sysadmin01 등 (비밀번호 pass1234)
+        </div>
       </div>
     </div>
   );
 }
+

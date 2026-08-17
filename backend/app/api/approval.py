@@ -22,6 +22,7 @@ from app.database import get_session
 from app.models import Approval
 from app.mcp_tools.registry import run_tool
 from app.core import prompt_injection
+from app.api.auth import require_admin
 
 router = APIRouter()
 
@@ -104,12 +105,11 @@ def get_approval(approval_id: int, db: Session = Depends(get_session)):
 
 class DecideRequest(BaseModel):
     decision: str            # "approve" | "reject"
-    admin_id: str = "admin"
-
 
 @router.post("/approvals/{approval_id}/decide")
 async def decide_approval(approval_id: int, body: DecideRequest,
-                    db: Session = Depends(get_session)):
+                    db: Session = Depends(get_session),
+                    identity: dict = Depends(require_admin)):
     """관리자가 승인/거부. 승인이면 여기서 도구를 실행한다."""
     ap = db.get(Approval, approval_id)
     if not ap:
@@ -121,8 +121,7 @@ async def decide_approval(approval_id: int, body: DecideRequest,
                             detail=f"이미 처리된 요청입니다 (상태: {ap.status})")
 
     if body.decision == "approve":
-        result = await run_tool(ap.tool_name, ap.arguments)   # 승인 시점에 실제 실행
-        # 간접 프롬프트 인젝션: 결과 안에 지시문이 숨어있으면 에이전트에게 넘기기 전에 무해화한다.
+        result = await run_tool(ap.tool_name, ap.arguments)
         if prompt_injection.scan_value(result):
             result = prompt_injection.redact(result)
         ap.result = result
@@ -134,8 +133,9 @@ async def decide_approval(approval_id: int, body: DecideRequest,
                             detail="decision 은 approve 또는 reject 여야 합니다")
 
     ap.decided_at = _now()
-    ap.decided_by = body.admin_id
+    ap.decided_by = identity["username"]
     db.add(ap)
     db.commit()
     db.refresh(ap)
     return ap
+

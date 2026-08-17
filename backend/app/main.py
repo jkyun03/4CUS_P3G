@@ -22,12 +22,15 @@ from app.api.analytics import router as analytics_router
 from app.api.tools import router as tools_router
 from app.api.reports import router as reports_router
 from app.api.rules import router as rules_router
+from app.api.auth import router as auth_router
+from app.seed_users import seed_users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시: 테이블 생성 + 초기 도구 목록 삽입
     init_db()
     seed_tools()
+    seed_users()
     seed_thresholds()
     try:
         await mcp_client.connect()
@@ -55,6 +58,7 @@ app.include_router(analytics_router)
 app.include_router(tools_router)
 app.include_router(reports_router)
 app.include_router(rules_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():

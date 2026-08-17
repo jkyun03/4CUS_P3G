@@ -5,3 +5,4 @@ httpx
 reportlab
 mcp>=1.2.0
 python-dotenv
+pyjwt
