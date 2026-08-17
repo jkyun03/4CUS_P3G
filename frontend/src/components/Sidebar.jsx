@@ -1,8 +1,9 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, PlayCircle, ListChecks, Clock,
-  BarChart3, Wrench, SlidersHorizontal, ShieldCheck,
+  BarChart3, Wrench, SlidersHorizontal, ShieldCheck, LogOut,
 } from "lucide-react";
+import { getIdentity, logout } from "../api.js";
 
 const items = [
   { to: "/dashboard", label: "대시보드", icon: LayoutDashboard },
@@ -16,6 +17,15 @@ const items = [
 
 // 왼쪽 다크 내비게이션 바
 export default function Sidebar() {
+  const navigate = useNavigate();
+  const identity = getIdentity();
+  const displayName = identity?.display_name || identity?.user_id || "로그인 필요";
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -35,8 +45,11 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="sidebar-user">
-        <span className="avatar">관</span>
-        <span>보안관리자</span>
+        <span className="avatar">{displayName[0]}</span>
+        <span>{displayName}</span>
+        <button className="logout-btn" onClick={handleLogout} title="로그아웃" aria-label="로그아웃">
+          <LogOut size={15} />
+        </button>
       </div>
     </aside>
   );

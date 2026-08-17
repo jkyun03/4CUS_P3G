@@ -10,6 +10,16 @@ from app.main import app
 from app.database import engine
 from app.models import Tool, AgentSession, ToolCall
 from app.core import prompt_injection, tool_integrity, ml_classifier, anomaly
+from app.core.masking import mask_data
+
+# role -> 로그인에 쓸 데모 계정 (seed_users.py 참고). role은 이제 로그인 계정으로만 정해지고
+# 요청 body의 user_role/user_id는 백엔드가 더 이상 보지 않는다(JWT identity 기준).
+DEFAULT_USERNAME_BY_ROLE = {
+    "doctor": "doctor_kim", "nurse": "nurse_lee", "pharmacist": "pharm01",
+    "admin_staff": "admin_staff01", "insurance_reviewer": "insurance01",
+    "security_officer": "security01", "system_admin": "sysadmin01",
+    "intern": "intern01", "hospital_admin": "hospadmin01",
+}
 
 
 def test_prompt_injection_unit():
@@ -65,12 +75,32 @@ def test_anomaly_unit():
     assert z3 > anomaly.Z_THRESHOLD
 
 
+def test_masking_unregistered_role_unit():
+    """
+    masking.py 단독 단위 테스트: 정책 표에 없는(미등록) role은 fail-closed로 전부 마스킹돼야 한다.
+    로그인 계정은 항상 정해진 9개 직군 중 하나라 API로는 '미등록 role'을 재현할 수 없어서,
+    마스킹 함수를 직접 호출해 확인한다.
+    """
+    masked = mask_data({"patient_id": "P1001", "diagnosis": "고혈압"}, role="guest", user_id="")
+    assert masked["diagnosis"] == "[비식별]"
+
+
 def run():
     with TestClient(app) as client:
+        tokens = {}
+
+        def token_for(username):
+            if username not in tokens:
+                r = client.post("/auth/login", json={"username": username, "password": "pass1234"})
+                assert r.status_code == 200, f"로그인 실패: {username} -> {r.text}"
+                tokens[username] = r.json()["access_token"]
+            return tokens[username]
+
         def call(session_id, tool, arguments, role, user_id="", request="테스트 요청"):
-            body = {"session_id": session_id, "user_request": request, "tool": tool,
-                     "arguments": arguments, "user_role": role, "user_id": user_id}
-            return client.post("/v1/tool_call", json=body).json()
+            username = user_id or DEFAULT_USERNAME_BY_ROLE[role]
+            body = {"session_id": session_id, "user_request": request, "tool": tool, "arguments": arguments}
+            headers = {"Authorization": "Bearer " + token_for(username)}
+            return client.post("/v1/tool_call", json=body, headers=headers).json()
 
         print("=" * 70)
 
@@ -102,10 +132,6 @@ def run():
         r = call("S6", "get_medical_record", {"patient_id": "P1001"}, "security_officer")
         print("[보안담당자]", r["result"])
         assert r["result"]["patient_id"] == "P1***"
-
-        r = call("S7", "get_medical_record", {"patient_id": "P1001"}, "guest")
-        print("[미등록 role]", r["result"])
-        assert r["result"]["diagnosis"] == "[비식별]"
 
         r = call("S8", "send_email", {"to": "x@y.com", "body": "..."}, "intern")
         print("[실습생-메일발송 시도]", r["decision"], r["reasons"])
@@ -189,12 +215,14 @@ def run():
             s.commit()
 
         # ---- 사용자별 행동 이상탐지: 평소 하루 1건 보던 사람이 오늘 갑자기 여러 건 조회 ----
+        # doctor_park(다른 테스트에서 안 쓰는 계정)을 이 시나리오 전용으로 사용한다.
         with Session(engine) as s:
-            s.add(AgentSession(id="ANOMALY-HIST", user_id="user_anomaly_test", user_request="baseline"))
+            s.add(AgentSession(id="ANOMALY-HIST", user_id="doctor_park", user_request="baseline"))
             s.commit()
             now = datetime.now(timezone.utc)
             for days_ago in range(1, 6):   # 최근 5일간 하루 1건씩 = 평소 패턴
-                s.add(ToolCall(session_id="ANOMALY-HIST", tool_name="get_medical_record",
+                s.add(ToolCall(session_id="ANOMALY-HIST", user_id="doctor_park",
+                                tool_name="get_medical_record",
                                 arguments={"patient_id": "P1001"},
                                 timestamp=now - timedelta(days=days_ago)))
             s.commit()
@@ -202,9 +230,32 @@ def run():
         last = None
         for _ in range(3):   # 오늘 갑자기 3건 연속 조회
             last = call("ANOMALY-TODAY", "get_medical_record", {"patient_id": "P1001"},
-                        "doctor", user_id="user_anomaly_test")
+                        "doctor", user_id="doctor_park")
         print("[행동 이상탐지]", last["decision"], last["reasons"])
         assert any("평소 패턴 대비 이상 행동" in r for r in last["reasons"])
+
+        # ---- 보안 수정 확인: PATCH /tools, PATCH /rules는 이제 관리자만 가능해야 한다 ----
+        r = client.patch("/tools/export_csv", json={"enabled": True})
+        assert r.status_code == 401, f"인증 없이 도구 설정 변경이 가능하면 안 됨: {r.status_code}"
+
+        intern_token = token_for("intern01")
+        r = client.patch("/tools/export_csv", json={"enabled": True},
+                         headers={"Authorization": "Bearer " + intern_token})
+        assert r.status_code == 403, f"관리자가 아닌데 도구 설정 변경이 가능하면 안 됨: {r.status_code}"
+
+        admin_token = token_for("sysadmin01")
+        r = client.patch("/tools/export_csv", json={"enabled": False},
+                         headers={"Authorization": "Bearer " + admin_token})
+        assert r.status_code == 200, f"관리자인데도 도구 설정 변경이 실패함: {r.status_code} {r.text}"
+        print("[보안] PATCH /tools 인증 정상 동작 (미인증 401, 비관리자 403, 관리자 200)")
+
+        r = client.patch("/rules", json={"warn": 30})
+        assert r.status_code == 401
+        r = client.patch("/rules", json={"warn": 30}, headers={"Authorization": "Bearer " + intern_token})
+        assert r.status_code == 403
+        r = client.patch("/rules", json={"warn": 30}, headers={"Authorization": "Bearer " + admin_token})
+        assert r.status_code == 200
+        print("[보안] PATCH /rules 인증 정상 동작 (미인증 401, 비관리자 403, 관리자 200)")
 
         print("=" * 70)
         print("전부 통과: 담당 환자 여부 + 직군별 마스킹 등급 + 프롬프트 인젝션(정규식/ML) + "
@@ -216,4 +267,5 @@ if __name__ == "__main__":
     test_tool_integrity_unit()
     test_ml_classifier_unit()
     test_anomaly_unit()
+    test_masking_unregistered_role_unit()
     run()
