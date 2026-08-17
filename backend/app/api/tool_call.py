@@ -70,6 +70,8 @@ async def handle_tool_call(
         permission_reason = f"권한 없음: '{user_role}' 역할은 {req.tool} 호출 불가"
     else:
         # 4-1) 툴 포이즈닝 검사: 설명에 숨은 지시문 + 최초 등록 이후 의미적 변조(rug-pull) 여부
+        # (필수 인자 누락은 여기서 차단하지 않는다 — core/analyzers.py의 가벼운 감점 신호로 처리하고,
+        #  실행 결과 자체는 각 mock 도구가 정직하게 실패를 반환하도록 한다)
         if tool_integrity.scan_description(tool_row.description):
             permission_reason = f"도구 설명에 숨겨진 지시문 의심 패턴 포함: {req.tool}"
         else:

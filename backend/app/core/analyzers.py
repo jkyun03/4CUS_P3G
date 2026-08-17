@@ -10,6 +10,7 @@
 from dataclasses import dataclass
 
 from app.core import prompt_injection, ml_classifier
+from app.mcp_tools.registry import REQUIRED_ARGUMENTS
 
 
 @dataclass
@@ -125,5 +126,13 @@ def analyze(tool_name: str, arguments: dict, user_request: str,
     if is_ml_injection:
         signals.append(RiskSignal("ml_injection_judgment", round(ml_confidence * 45),
                                    f"ML 분류기: 프롬프트 인젝션 의심 (확률 {ml_confidence:.0%})"))
+
+    # 12) 필수 인자 누락: 그 자체로 위험한 건 아니라서 가볍게 감점만 하고 감사 로그에 남긴다.
+    # 다른 위험 신호와 안 겹치면 총점이 낮아서 그냥 통과(allow)된다 — 도구 실행 결과는
+    # registry.py의 각 mock 함수가 알아서 '실패'를 정직하게 반환한다(허위 성공 방지).
+    missing_args = [k for k in REQUIRED_ARGUMENTS.get(tool_name, []) if not arguments.get(k)]
+    if missing_args:
+        signals.append(RiskSignal("missing_required_arguments", 10,
+                                   f"필수 인자 누락: {', '.join(missing_args)}"))
 
     return signals

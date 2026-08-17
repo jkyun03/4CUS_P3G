@@ -152,6 +152,14 @@ def run():
         assert r["decision"] == "approve"
         assert any("ML 분류기" in reason for reason in r["reasons"])
 
+        # ---- 필수 인자 누락: 차단할 정도는 아니고, 감지만 하고 넘어간다 ----
+        # (다른 위험 신호가 없으면 allow) — 대신 mock 도구 자체가 거짓 성공을 반환하지 않는다.
+        r = call("S13", "send_email", {}, "system_admin")
+        print("[인자 누락]", r["decision"], r["result"], r["reasons"])
+        assert r["decision"] == "allow"
+        assert any("필수 인자 누락" in reason for reason in r["reasons"])
+        assert "error" in r["result"]  # {"status": "sent"} 같은 거짓 성공이 아니어야 함
+
         # ---- 툴 포이즈닝: 최초 등록 이후 설명이 의미적으로 완전히 바뀐 경우(rug-pull) -------
         with Session(engine) as s:
             row = s.exec(select(Tool).where(Tool.name == "get_appointment")).first()
