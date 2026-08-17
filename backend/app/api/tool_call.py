@@ -69,10 +69,7 @@ async def handle_tool_call(
     elif tool_row.allowed_roles and user_role not in tool_row.allowed_roles:
         permission_reason = f"권한 없음: '{user_role}' 역할은 {req.tool} 호출 불가"
     else:
-<<<<<<< HEAD
-=======
         # 4-1) 툴 포이즈닝 검사: 설명에 숨은 지시문 + 최초 등록 이후 의미적 변조(rug-pull) 여부
->>>>>>> main
         if tool_integrity.scan_description(tool_row.description):
             permission_reason = f"도구 설명에 숨겨진 지시문 의심 패턴 포함: {req.tool}"
         else:
@@ -154,8 +151,6 @@ async def handle_tool_call(
     return _response(event, result, approval_id)
 
 
-<<<<<<< HEAD
-=======
 # ---- 내부 도우미 함수 --------------------------------------------------
 def _daily_sensitive_counts(db, user_id: str, tool_names, lookback_days: int = 14) -> dict:
     """이 user_id가 최근 N일간 민감 도구를 하루에 몇 번씩 호출했는지(날짜별 건수)."""
@@ -175,7 +170,6 @@ def _daily_sensitive_counts(db, user_id: str, tool_names, lookback_days: int = 1
     return by_day
 
 
->>>>>>> main
 def _save_event(db, call, req, risk, action, reasons, masked) -> Event:
     event = Event(
         tool_call_id=call.id, session_id=req.session_id, tool_name=req.tool,
