@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.database import init_db
-from app.seed import seed_tools
+from app.seed import seed_tools, seed_thresholds
 from app.mcp_tools.mcp_client import mcp_client
 from app.mcp_tools.sync import sync_real_tools
 from app.api.tool_call import router as tool_call_router
@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
     # 서버 시작 시: 테이블 생성 + 초기 도구 목록 삽입
     init_db()
     seed_tools()
+    seed_thresholds()
     try:
         await mcp_client.connect()
         await sync_real_tools()
