@@ -6,7 +6,6 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models import Tool, PolicyThreshold
 from app.mcp_tools.registry import TOOL_DESCRIPTIONS
-from app.core.tool_integrity import compute_signature
 
 ALL_ROLES = ["doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
              "security_officer", "system_admin", "intern", "hospital_admin"]
@@ -31,13 +30,12 @@ def seed_tools() -> None:
             description = TOOL_DESCRIPTIONS.get(t["name"], "")
             row = session.exec(select(Tool).where(Tool.name == t["name"])).first()
             if not row:
-                data = dict(t, description=description,
-                            signature_hash=compute_signature(t["name"], description))
+                data = dict(t, description=description, baseline_description=description)
                 session.add(Tool(**data))
             elif not row.description:
-                # 설명/서명 필드 도입 전에 만들어진 기존 행 — 설명을 채우고 기준 서명을 새로 기록한다.
+                # 설명 필드 도입 전에 만들어진 기존 행 — 설명을 채우고 기준값(baseline)도 함께 기록한다.
                 row.description = description
-                row.signature_hash = compute_signature(row.name, description)
+                row.baseline_description = description
                 session.add(row)
         session.commit()
         

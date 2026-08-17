@@ -29,13 +29,24 @@ def init_db() -> None:
 def _add_missing_columns() -> None:
     """
     이미 만들어진 SQLite 파일에 새 컬럼이 없으면 추가한다.
+<<<<<<< HEAD
+=======
+    create_all()은 없는 '테이블'만 만들어주고, 기존 테이블에 컬럼을 추가해주지는 않기 때문.
+    (예: 툴 포이즈닝 탐지를 위해 tool 테이블에 description/baseline_description을 나중에 추가한 경우)
+>>>>>>> main
     """
     with engine.connect() as conn:
         existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(tool)").fetchall()}
         if "description" not in existing:
             conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN description TEXT DEFAULT ''")
+<<<<<<< HEAD
         if "signature_hash" not in existing:
             conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN signature_hash TEXT")
+=======
+        if "baseline_description" not in existing:
+            conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN baseline_description TEXT")
+        conn.commit()
+>>>>>>> main
 
         tc_existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(toolcall)").fetchall()}
         if "user_id" not in tc_existing:
