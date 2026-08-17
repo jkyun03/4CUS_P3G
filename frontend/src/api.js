@@ -33,12 +33,19 @@ function authHeaders() {
 }
 
 export async function login(username, password) {
-  const res = await fetch(API_BASE + "/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) throw new Error("로그인 실패");
+  let res;
+  try {
+    res = await fetch(API_BASE + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+  } catch (e) {
+    // fetch 자체가 실패 = 백엔드 서버에 아예 연결이 안 된 것 (꺼져있음 / 포트 다름 / 네트워크 문제)
+    throw new Error("서버에 연결할 수 없습니다. 백엔드(uvicorn)가 http://localhost:8000 에서 켜져 있는지 확인하세요.");
+  }
+  if (res.status === 401) throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
+  if (!res.ok) throw new Error(`로그인 실패 (서버 오류: ${res.status}). 백엔드 콘솔에 에러가 없는지 확인하세요.`);
   const data = await res.json();
   setAuth(data.access_token, { role: data.role, user_id: data.user_id, display_name: data.display_name });
   return data;
