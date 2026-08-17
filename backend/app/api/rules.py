@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlmodel import Session
 from app.database import get_session
 from app.models import PolicyThreshold
+from app.api.auth import require_admin
 
 router = APIRouter()
 
@@ -27,7 +28,8 @@ class RuleUpdate(BaseModel):
 
 
 @router.patch("/rules")
-def update_rules(body: RuleUpdate, db: Session = Depends(get_session)):
+def update_rules(body: RuleUpdate, db: Session = Depends(get_session),
+                 identity: dict = Depends(require_admin)):
     th = db.get(PolicyThreshold, 1)
     warn = body.warn if body.warn is not None else th.warn
     approve = body.approve if body.approve is not None else th.approve

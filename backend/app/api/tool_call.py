@@ -91,7 +91,7 @@ async def handle_tool_call(
 
     # 5-1) 사용자별 행동 이상탐지: 오늘 이 사용자의 민감정보 조회 건수가 평소 패턴을 벗어났는가
     if req.tool in analyzers.SENSITIVE_READ_TOOLS:
-        user_key = req.user_id or req.user_role
+        user_key = user_id or user_role
         daily_counts = _daily_sensitive_counts(db, user_key, analyzers.SENSITIVE_READ_TOOLS)
         today_key = datetime.now(timezone.utc).date().isoformat()
         today_count = daily_counts.pop(today_key, 0)  # 이번 호출은 2)에서 이미 기록됨
@@ -156,8 +156,7 @@ def _daily_sensitive_counts(db, user_id: str, tool_names, lookback_days: int = 1
     """이 user_id가 최근 N일간 민감 도구를 하루에 몇 번씩 호출했는지(날짜별 건수)."""
     rows = db.exec(
         select(ToolCall.timestamp)
-        .join(AgentSession, ToolCall.session_id == AgentSession.id)
-        .where(AgentSession.user_id == user_id)
+        .where(ToolCall.user_id == user_id)
         .where(ToolCall.tool_name.in_(list(tool_names)))
     ).all()
     cutoff = datetime.now(timezone.utc) - timedelta(days=lookback_days)

@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
-import { getJson, postJson } from "../api.js";
+import { getJson, postJson, getIdentity } from "../api.js";
 import RiskBadge from "../components/RiskBadge.jsx";
-
-const ROLES = [
-  "doctor", "nurse", "pharmacist", "admin_staff", "insurance_reviewer",
-  "security_officer", "system_admin", "intern", "hospital_admin",
-];
 
 const SCENARIOS = {
   "정상": {
@@ -57,10 +52,9 @@ const SCENARIOS = {
 };
 
 export default function Console() {
+  const identity = getIdentity(); // 도구 호출은 이제 이 로그인 계정의 role로만 판정된다 (백엔드가 JWT에서 가져옴)
   const [mode, setMode] = useState("scenario"); // "scenario" | "custom"
   const [selected, setSelected] = useState("위험 1 · 외부전송");
-  const [role, setRole] = useState("doctor");
-  const [userId, setUserId] = useState("doctor_kim");
   const [steps, setSteps] = useState([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
@@ -104,8 +98,6 @@ export default function Console() {
           user_request: scenario.request,
           tool: step.tool,
           arguments: step.arguments,
-          user_role: role,
-          user_id: userId,
         });
         results.push({ tool: step.tool, ...r });
         setSteps([...results]);
@@ -140,8 +132,6 @@ export default function Console() {
         user_request: customRequest,
         tool: customTool,
         arguments: parsedArgs,
-        user_role: role,
-        user_id: userId,
       });
       setSteps((prev) => [...prev, { tool: customTool, ...r }]);
     } catch (e) {
@@ -180,6 +170,12 @@ export default function Console() {
         </button>
       </div>
 
+      <div className="empty" style={{ fontSize: 12, marginBottom: 10 }}>
+        현재 로그인 계정으로 판정됩니다: <b>{identity?.display_name || identity?.user_id || "알 수 없음"}</b>
+        {" "}(role: <span className="mono">{identity?.role || "-"}</span>).
+        다른 직군으로 테스트하려면 로그아웃 후 해당 직군 계정으로 다시 로그인하세요.
+      </div>
+
       {mode === "scenario" && (
         <>
           <div className="chip-row">
@@ -196,20 +192,6 @@ export default function Console() {
 
           <div className="console-run">
             <div className="console-request">"{SCENARIOS[selected].request}"</div>
-
-            <select className="role-select" value={role} onChange={(e) => setRole(e.target.value)}>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-
-            <input
-              className="console-request"
-              style={{ flex: "none", width: 140 }}
-              placeholder="user_id"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
 
             <button className="btn-primary" onClick={run} disabled={running}>
               {running ? "실행 중…" : "실행"}
@@ -235,20 +217,6 @@ export default function Console() {
                 <option key={t.name} value={t.name}>{t.name}</option>
               ))}
             </select>
-
-            <select className="role-select" value={role} onChange={(e) => setRole(e.target.value)}>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-
-            <input
-              className="console-request"
-              style={{ flex: "none", width: 140 }}
-              placeholder="user_id"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
           </div>
 
           <input
