@@ -9,7 +9,7 @@
 """
 from dataclasses import dataclass
 
-from app.core import prompt_injection
+from app.core import prompt_injection, ml_classifier
 
 
 @dataclass
@@ -119,5 +119,11 @@ def analyze(tool_name: str, arguments: dict, user_request: str,
     if injection_hits:
         signals.append(RiskSignal("prompt_injection", 45,
                                    f"프롬프트 인젝션 의심 패턴 탐지 ({len(injection_hits)}건)"))
+
+    # 11) 로컬 ML 분류기: 정규식이 놓치는 패러프레이징 인젝션을 보조로 탐지 (비용 없음, 로컬 추론)
+    is_ml_injection, ml_confidence = ml_classifier.predict(f"{user_request} {arguments}")
+    if is_ml_injection:
+        signals.append(RiskSignal("ml_injection_judgment", round(ml_confidence * 45),
+                                   f"ML 분류기: 프롬프트 인젝션 의심 (확률 {ml_confidence:.0%})"))
 
     return signals
