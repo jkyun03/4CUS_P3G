@@ -59,7 +59,7 @@ class Tool(SQLModel, table=True):
     enabled: bool = True
     allowed_roles: list = Field(default_factory=list, sa_column=Column(JSON))
     description: str = ""                         # MCP 도구 설명(LLM에 노출되는 텍스트) — 툴 포이즈닝 탐지 대상
-    signature_hash: Optional[str] = None           # 최초 등록 시점 (name+description) 지문 — rug-pull 탐지용
+    baseline_description: Optional[str] = None     # 최초 등록 시점 설명 원문 — 의미 유사도 기반 변조(rug-pull) 탐지의 기준값
 
 class Approval(SQLModel, table=True):
     """
