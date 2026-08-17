@@ -28,6 +28,7 @@ class ToolCall(SQLModel, table=True):
     """에이전트가 호출한 도구 한 건의 원본 기록."""
     id: Optional[int] = Field(default=None, primary_key=True)
     session_id: str = Field(foreign_key="agentsession.id", index=True)
+    user_id: str = Field(index=True, default="")
     tool_name: str
     arguments: dict = Field(default_factory=dict, sa_column=Column(JSON))
     timestamp: datetime = Field(default_factory=_now)
@@ -88,3 +89,13 @@ class PolicyThreshold(SQLModel, table=True):
         warn: int = 30       # 이 점수 이상이면 경고
         approve: int = 60    # 이 점수 이상이면 승인 필요
         block: int = 80      # 이 점수 이상이면 차단
+
+class User(SQLModel, table=True):
+    """로그인 계정."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(unique=True, index=True)
+    hashed_password: str
+    salt: str
+    role: str
+    user_id: str
+    display_name: str = ""

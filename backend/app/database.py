@@ -40,6 +40,10 @@ def _add_missing_columns() -> None:
             conn.exec_driver_sql("ALTER TABLE tool ADD COLUMN baseline_description TEXT")
         conn.commit()
 
+        tc_existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(toolcall)").fetchall()}
+        if "user_id" not in tc_existing:
+            conn.exec_driver_sql("ALTER TABLE toolcall ADD COLUMN user_id TEXT DEFAULT ''")
+        conn.commit()
 
 def get_session():
     """
