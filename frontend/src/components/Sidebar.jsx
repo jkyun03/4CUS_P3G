@@ -30,7 +30,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-logo">
         <ShieldCheck size={20} color="#ff4628" />
-        <span>IDEA Gateway</span>
+        <span>P3G</span>
       </div>
       <nav className="sidebar-nav">
         {items.map(({ to, label, icon: Icon }) => (
