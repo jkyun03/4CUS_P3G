@@ -51,9 +51,29 @@ export async function login(username, password) {
   return data;
 }
 
+// 백엔드는 실패 시 {"detail": "관리자 권한이 필요합니다"} 처럼 사람이 읽을 메시지를 같이 보내준다.
+// 그 메시지를 그대로 보여주고, 없으면(네트워크 오류 등) 상태코드 기반 메시지로 대체한다.
+async function throwForStatus(res) {
+  let detail;
+  try {
+    const body = await res.json();
+    detail = body && body.detail;
+  } catch (e) {
+    // 응답 본문이 JSON이 아닌 경우 무시하고 아래 기본 메시지로 대체
+  }
+  if (!detail) {
+    if (res.status === 401) detail = "로그인이 필요합니다. 다시 로그인해주세요.";
+    else if (res.status === 403) detail = "이 작업을 할 수 있는 권한이 없습니다.";
+    else detail = "요청 실패: " + res.status;
+  }
+  const err = new Error(detail);
+  err.status = res.status;
+  throw err;
+}
+
 export async function getJson(path) {
   const res = await fetch(API_BASE + path, { headers: authHeaders() });
-  if (!res.ok) throw new Error("요청 실패: " + res.status);
+  if (!res.ok) await throwForStatus(res);
   return res.json();
 }
 
@@ -63,7 +83,7 @@ export async function postJson(path, body) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error("요청 실패: " + res.status);
+  if (!res.ok) await throwForStatus(res);
   return res.json();
 }
 
@@ -73,7 +93,7 @@ export async function patchJson(path, body) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error("요청 실패: " + res.status);
+  if (!res.ok) await throwForStatus(res);
   return res.json();
 }
 

@@ -10,16 +10,22 @@ const ALL_ROLES = [
 // 도구 관리: /tools 목록을 표로 보여주고, 토글로 on/off, 직군 칩으로 권한을 바꾼다.
 export default function Tools() {
   const [tools, setTools] = useState([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");     // 목록 자체를 못 불러온 경우 (전체 화면 대체)
+  const [actionError, setActionError] = useState(""); // 토글 하나 실패한 경우 (토스트로만 표시)
 
   const load = () => getJson("/tools").then(setTools).catch((e) => setError(e.message));
   useEffect(() => { load(); }, []);
+
+  const showActionError = (message) => {
+    setActionError(message);
+    setTimeout(() => setActionError(""), 4000);
+  };
 
   const toggleEnabled = async (t) => {
     try {
       await patchJson("/tools/" + t.name, { enabled: !t.enabled });
       load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { showActionError(e.message); }
   };
 
   const toggleRole = async (t, role) => {
@@ -29,7 +35,7 @@ export default function Tools() {
     try {
       await patchJson("/tools/" + t.name, { allowed_roles: roles });
       load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { showActionError(e.message); }
   };
 
   if (error) return <div className="error-box">연결 실패: {error}</div>;
@@ -37,6 +43,7 @@ export default function Tools() {
   return (
     <div>
       <h1 className="page-title">도구 관리</h1>
+      {actionError && <div className="toast" style={{ borderLeftColor: "var(--brand)" }}>⚠ {actionError}</div>}
       <div className="card card-flush">
         <table className="tools-table">
           <thead>

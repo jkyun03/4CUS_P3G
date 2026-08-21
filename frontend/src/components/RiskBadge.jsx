@@ -4,6 +4,8 @@ const MAP = {
   mask:    { label: "마스킹", cls: "badge-mask" },
   warn:    { label: "경고", cls: "badge-warn" },
   approve: { label: "승인 필요", cls: "badge-approve" },
+  approved: { label: "승인됨", cls: "badge-allow" },
+  rejected: { label: "거부됨", cls: "badge-block" },
   block:   { label: "차단", cls: "badge-block" },
 };
 
