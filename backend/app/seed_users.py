@@ -1,4 +1,3 @@
-# backend/app/seed_users.py
 """
 데모 로그인 계정을 만든다 (서버 시작 시 1회).
 """

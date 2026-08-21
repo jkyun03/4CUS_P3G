@@ -21,7 +21,7 @@ engine = create_engine(
 def init_db() -> None:
     """테이블이 없으면 만든다. 서버 시작 시 한 번 호출한다."""
     # models를 import 해야 SQLModel이 어떤 테이블을 만들지 알 수 있다.
-    import app.models  # noqa: F401
+    import app.models
     SQLModel.metadata.create_all(engine)
     _add_missing_columns()
 

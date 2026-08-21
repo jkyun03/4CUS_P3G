@@ -74,7 +74,6 @@ export default function Console() {
         if (list.length && !customTool) setCustomTool(list[0].name);
       })
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const switchMode = (m) => {
