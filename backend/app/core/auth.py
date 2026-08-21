@@ -1,8 +1,3 @@
-"""
-인증 유틸리티. FastAPI/DB에 의존하지 않는 순수 파이썬.
-- 비밀번호: hashlib.pbkdf2_hmac 로 해시
-- 토큰: JWT (pyjwt)
-"""
 import os
 import hashlib
 import secrets
