@@ -1,8 +1,7 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 BENIGN_EXAMPLES = [
     "김민수 환자의 다음 예약 시간을 알려줘",
     "환자 진료기록을 조회해줘",

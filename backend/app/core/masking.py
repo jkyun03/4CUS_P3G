@@ -1,8 +1,7 @@
 import re
 from app.mcp_tools.registry import PATIENTS
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 RRN_PATTERN = re.compile(r"\d{6}-\d{7}")
 PHONE_PATTERN = re.compile(r"01[016789]-?\d{3,4}-?\d{4}")
 EMAIL_PATTERN = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
@@ -11,8 +10,6 @@ HIDDEN_MARK = "[접근불가]"
 DEIDENT_MARK = "[비식별]"
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
 def _mask_person(value: str) -> str:
     if len(value) < 2:
         return value
@@ -23,24 +20,23 @@ def _mask_rrn_partial(value: str) -> str:
     m = re.match(r"(\d{6})-?(\d{7})", value)
     if not m:
         return DEIDENT_MARK
-    return f"{m.group(1)}-{'*' * 7}"                    # 900101-1234567 -> 900101-*******
+    return f"{m.group(1)}-{'*' * 7}"                   
 
 
 def _mask_phone_partial(value: str) -> str:
     m = re.match(r"(01[016789])-?(\d{3,4})-?(\d{4})", value)
     if not m:
         return DEIDENT_MARK
-    return f"{m.group(1)}-{'*' * len(m.group(2))}-{m.group(3)}"   # 010-1234-5678 -> 010-****-5678
+    return f"{m.group(1)}-{'*' * len(m.group(2))}-{m.group(3)}"   
 
 
 def _mask_patient_id_partial(value: str) -> str:
     if len(value) <= 3:
         return value
-    return value[:2] + "*" * (len(value) - 2)           # P1001 -> P1***
+    return value[:2] + "*" * (len(value) - 2)           
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 PARTIAL_MASKERS = {
     "name": _mask_person,
     "rrn": _mask_rrn_partial,
@@ -62,8 +58,7 @@ def _apply_level(key: str, value: str, level: str) -> str:
     return DEIDENT_MARK
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 FIELD_POLICY = {
     "doctor": {
         "name": "full", "rrn": "partial", "phone": "full",
@@ -129,8 +124,7 @@ DEFAULT_POLICY = {
 }
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 def _is_own_patient(role: str, user_id: str, patient_id: str) -> bool:
     if not patient_id or not user_id:
         return False
@@ -152,8 +146,7 @@ def _resolve_effective_role(role: str, user_id: str, patient_id: str) -> str:
     return role
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 def _scan_free_text(value: str) -> str:
     value = RRN_PATTERN.sub(lambda m: m.group()[:7] + "*******", value)
     value = PHONE_PATTERN.sub("010-****-****", value)
@@ -161,8 +154,7 @@ def _scan_free_text(value: str) -> str:
     return value
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
 def mask_data(data, role: str = "hospital_admin", user_id: str = ""):
     if isinstance(data, dict):
         patient_id = data.get("patient_id")
