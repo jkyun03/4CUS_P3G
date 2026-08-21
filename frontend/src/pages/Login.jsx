@@ -24,7 +24,7 @@ export default function Login() {
       <div className="login-card">
         <div className="login-head">
           <ShieldCheck size={32} color="#ff4628" />
-          <div className="login-title">IDEA Gateway</div>
+          <div className="login-title">P3G</div>
           <div className="login-sub">관리자 콘솔 로그인</div>
         </div>
 
@@ -37,9 +37,6 @@ export default function Login() {
         {error && <div className="error-box" style={{ marginBottom: 12 }}>{error}</div>}
 
         <button className="btn-primary btn-full" onClick={handleLogin}>로그인</button>
-        <div className="login-note">
-          데모 계정: doctor_kim / nurse_lee / pharm01 / sysadmin01 등 (비밀번호 pass1234)
-        </div>
       </div>
     </div>
   );
