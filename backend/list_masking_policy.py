@@ -1,4 +1,3 @@
-# list_masking_policy.py
 """
 직군별 필드 마스킹 정책을 표로 출력한다.
 실행: python list_masking_policy.py

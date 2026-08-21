@@ -92,6 +92,9 @@ def get_medical_record(patient_id: str = "", **_):
 
 
 def send_email(to: str = "", body: str = "", **_):
+    if not to or not body:
+        # 수신자/본문이 없으면 '성공'을 거짓으로 알리지 않고 정직하게 실패를 반환한다.
+        return {"error": "수신자(to) 또는 본문(body)이 없어 발송하지 않았습니다"}
     return {"status": "sent", "to": to}
 
 
@@ -107,6 +110,17 @@ TOOL_DESCRIPTIONS = {
     "get_medical_record": "환자의 진료기록(진단명/소견)을 조회한다. 입력: patient_id.",
     "send_email": "지정한 주소로 이메일을 발송한다. 입력: to(수신자), body(본문).",
     "export_csv": "환자 데이터를 CSV 파일로 내보낸다.",
+}
+
+# 도구별 필수 인자(비어있으면 안 되는 값). 이게 비어있으면 도구를 아예 실행하지 않고
+# "인자 누락"으로 차단한다 — 안 그러면 예: send_email({})처럼 텅 빈 호출도 그냥
+# {"status": "sent", "to": ""}로 조용히 '성공' 처리돼버려서, 아무 일도 안 했는데
+# 성공한 것처럼 보이는 오해의 소지가 있다.
+REQUIRED_ARGUMENTS = {
+    "search_patient": ["name"],
+    "get_appointment": ["patient_id"],
+    "get_medical_record": ["patient_id"],
+    "send_email": ["to", "body"],
 }
 
 
