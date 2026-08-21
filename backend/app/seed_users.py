@@ -8,7 +8,7 @@ from app.models import User
 from app.core.auth import hash_password
 
 DEMO_USERS = [
-    ("doctor_kim", "pass1234", "doctor", "doctor_kim", "김민수 담당의"),
+    ("doctor_kim", "pass1234", "doctor", "doctor_kim", "시스템관리자"),
     ("doctor_park", "pass1234", "doctor", "doctor_park", "이영희 담당의"),
     ("nurse_lee", "pass1234", "nurse", "nurse_lee", "김민수 담당간호사"),
     ("nurse_choi", "pass1234", "nurse", "nurse_choi", "이영희 담당간호사"),
