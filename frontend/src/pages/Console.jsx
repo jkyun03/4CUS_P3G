@@ -52,14 +52,14 @@ const SCENARIOS = {
 };
 
 export default function Console() {
-  const identity = getIdentity(); // 도구 호출은 이제 이 로그인 계정의 role로만 판정된다 (백엔드가 JWT에서 가져옴)
+  const identity = getIdentity(); // 도구 호출은 이제 이 로그인 계정의 role로만 판정된다.
   const [mode, setMode] = useState("scenario"); // "scenario" | "custom"
   const [selected, setSelected] = useState("위험 1 · 외부전송");
   const [steps, setSteps] = useState([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
 
-  // ---- 직접 입력 모드: 시나리오 없이 평가자가 원하는 도구/요청/인자를 자유롭게 넣어본다 ----
+  // 직접 입력 모드: 시나리오 없이 평가자가 원하는 도구/요청/인자를 자유롭게 넣어본다
   const [tools, setTools] = useState([]);
   const [customSessionId, setCustomSessionId] = useState(null);
   const [customTool, setCustomTool] = useState("");
@@ -267,6 +267,15 @@ export default function Console() {
                     <RiskBadge decision={s.decision} />
                     <span className="flow-reason">{topReason(s)}</span>
                   </div>
+                  {s.result !== undefined && (
+                    <pre className="mono" style={{
+                      background: "#0d1013", color: "#d9e6ef", borderRadius: 8,
+                      padding: "8px 10px", fontSize: 11.5, marginTop: 6,
+                      overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                    }}>
+                      {JSON.stringify(s.result, null, 2)}
+                    </pre>
+                  )}
                 </div>
               </div>
             ))}
