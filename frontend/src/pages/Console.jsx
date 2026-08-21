@@ -170,8 +170,7 @@ export default function Console() {
       </div>
 
       <div className="empty" style={{ fontSize: 12, marginBottom: 10 }}>
-        현재 로그인 계정으로 판정됩니다: <b>{identity?.display_name || identity?.user_id || "알 수 없음"}</b>
-        {" "}(role: <span className="mono">{identity?.role || "-"}</span>).
+        현재 로그인 계정으로 판정됩니다: <b>{identity?.display_name || identity?.user_id || "알 수 없음"}</b>.
         다른 직군으로 테스트하려면 로그아웃 후 해당 직군 계정으로 다시 로그인하세요.
       </div>
 

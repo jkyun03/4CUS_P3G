@@ -21,6 +21,16 @@ DEFAULT_TOOLS = [
      "allowed_roles": ["system_admin"]},
     {"name": "export_csv",         "role": "CSV 반출",      "base_risk": "high", "enabled": False,
      "allowed_roles": ["system_admin"]},
+    {"name": "search",             "role": "FHIR 리소스 검색", "base_risk": "medium", "enabled": True,
+     "allowed_roles": ALL_ROLES},
+    {"name": "read",               "role": "FHIR 리소스 조회", "base_risk": "medium", "enabled": True,
+     "allowed_roles": ALL_ROLES},
+    {"name": "create",             "role": "FHIR 리소스 생성", "base_risk": "high", "enabled": True,
+     "allowed_roles": ALL_ROLES},
+    {"name": "update",             "role": "FHIR 리소스 수정", "base_risk": "high", "enabled": True,
+     "allowed_roles": ALL_ROLES},
+    {"name": "delete",             "role": "FHIR 리소스 삭제", "base_risk": "high", "enabled": True,
+     "allowed_roles": ALL_ROLES},
 ]
 
 
