@@ -1,6 +1,3 @@
-"""
-인증 API.
-"""
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from sqlmodel import Session, select

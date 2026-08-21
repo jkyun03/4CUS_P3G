@@ -1,9 +1,3 @@
-"""
-도구 관리 API. (Tools.jsx 가 사용)
-
-GET   /tools           - 전체 도구 목록 조회
-PATCH /tools/{name}     - 도구 하나의 enabled / allowed_roles 수정
-"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select

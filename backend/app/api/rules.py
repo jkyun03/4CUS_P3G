@@ -1,9 +1,3 @@
-"""
-정책(임계값) 설정 API. ('정책 설정' 기능)
-
-- GET   /rules : 현재 판정 임계값 (경고/승인/차단 경계)
-- PATCH /rules : 임계값 수정 (0~100, warn < approve < block)
-"""
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

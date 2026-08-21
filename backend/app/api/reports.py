@@ -1,9 +1,3 @@
-"""
-리포트 내보내기 API. ('리포트' 기능 2단계)
-
-- GET /reports/events.csv : events 를 CSV 로 다운로드 (엑셀 한글 대응 BOM 포함)
-- GET /reports/events.pdf : events 를 PDF 보고서로 다운로드 (한글 폰트 내장)
-"""
 import csv
 import io
 from collections import Counter
@@ -26,7 +20,6 @@ from app.models import Event
 
 router = APIRouter()
 
-# reportlab 에 내장된 한글 폰트 등록 (별도 파일/설치 불필요)
 pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
 KOR_FONT = "HYSMyeongJo-Medium"
 

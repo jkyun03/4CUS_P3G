@@ -1,6 +1,3 @@
-"""
-리포트 / 분석 API. events 테이블을 집계해서 대시보드용 JSON을 돌려준다.
-"""
 from collections import Counter
 
 from fastapi import APIRouter, Depends
