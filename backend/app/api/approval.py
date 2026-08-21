@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Approval
+from app.models import Approval, Event
 from app.mcp_tools.registry import run_tool
 from app.core import prompt_injection
 from app.api.auth import require_admin
@@ -113,6 +113,14 @@ async def decide_approval(approval_id: int, body: DecideRequest,
     ap.decided_at = _now()
     ap.decided_by = identity["username"]
     db.add(ap)
+
+    # 감사 로그(Event)에도 최종 결과를 반영한다 — 안 하면 승인/거부 후에도
+    # 감사 로그엔 최초 판정("승인 필요")만 영원히 남는다.
+    event = db.get(Event, ap.event_id)
+    if event:
+        event.decision = ap.status
+        db.add(event)
+
     db.commit()
     db.refresh(ap)
     return ap
