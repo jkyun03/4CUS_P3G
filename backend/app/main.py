@@ -1,10 +1,6 @@
 """
 FastAPI 앱 진입점.
 
-실행: (backend 폴더에서)
-    uvicorn app.main:app --reload
-
-그러면 http://127.0.0.1:8000/docs 에서 API를 눌러가며 테스트할 수 있다.
 """
 from contextlib import asynccontextmanager
 
@@ -27,7 +23,6 @@ from app.seed_users import seed_users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버 시작 시: 테이블 생성 + 초기 도구 목록 삽입
     init_db()
     seed_tools()
     seed_users()

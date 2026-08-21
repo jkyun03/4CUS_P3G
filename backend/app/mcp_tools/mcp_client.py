@@ -1,19 +1,5 @@
 """
-실제 MCP 서버에 붙는 클라이언트.
-
-stdio(로컬 프로세스 실행) / streamable-http(원격 URL) 두 방식을 지원.
-연결 정보는 환경변수로 준다(backend/.env):
-
-  MCP_TRANSPORT=stdio
-  MCP_SERVER_COMMAND=uvx
-  MCP_SERVER_ARGS=fhir-mcp-server --transport stdio
-
-  또는
-
-  MCP_TRANSPORT=http
-  MCP_SERVER_URL=http://localhost:8000/mcp
-
-MCP_TRANSPORT 가 없으면 연결을 시도하지 않고 mock만 사용한다(registry.py 폴백).
+MCP 서버에 연결해 제공되는 도구를 조회하고 호출하는 코드.
 """
 import os
 from contextlib import AsyncExitStack

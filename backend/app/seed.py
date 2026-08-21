@@ -1,5 +1,5 @@
 """
-초기 도구 목록을 DB에 넣는다 (서버 시작 시 1회).
+초기 도구 목록을 DB에 넣는다
 """
 from sqlmodel import Session, select
 
@@ -33,7 +33,6 @@ def seed_tools() -> None:
                 data = dict(t, description=description, baseline_description=description)
                 session.add(Tool(**data))
             elif not row.description:
-                # 설명 필드 도입 전에 만들어진 기존 행 — 설명을 채우고 기준값(baseline)도 함께 기록한다.
                 row.description = description
                 row.baseline_description = description
                 session.add(row)
@@ -42,5 +41,5 @@ def seed_tools() -> None:
 def seed_thresholds():
     with Session(engine) as s:
         if not s.get(PolicyThreshold, 1):
-            s.add(PolicyThreshold(id=1))  # 기본값(30/60/80)으로 한 행 생성
+            s.add(PolicyThreshold(id=1))  
             s.commit()
