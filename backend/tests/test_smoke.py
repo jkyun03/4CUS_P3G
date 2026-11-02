@@ -1,5 +1,5 @@
 """
-스모크 테스트: python test_smoke.py
+스모크 테스트: backend 폴더에서 python -m tests.test_smoke
 """
 from datetime import datetime, timedelta, timezone
 

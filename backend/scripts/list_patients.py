@@ -1,6 +1,6 @@
 """
 환자별 담당의/담당간호사/주민번호/전화번호/진단명/소견내용을 표로 출력한다.
-실행: python list_patients.py
+실행: backend 폴더에서 python -m scripts.list_patients
 """
 from app.mcp_tools.registry import PATIENTS, RECORDS
 
