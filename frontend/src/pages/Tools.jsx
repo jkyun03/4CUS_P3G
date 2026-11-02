@@ -1,3 +1,4 @@
+// 도구 관리 화면: 도구별 활성화와 허용 직군 설정.
 import { useEffect, useState } from "react";
 import { getJson, patchJson } from "../api.js";
 
@@ -94,4 +95,3 @@ export default function Tools() {
 function riskLabel(r) {
   return { low: "낮음", medium: "중간", high: "높음" }[r] || r;
 }
-

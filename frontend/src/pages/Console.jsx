@@ -1,3 +1,4 @@
+// 시연 콘솔: 공격/정상 시나리오나 직접 입력한 도구 호출을 게이트웨이에 보내고 판정 결과를 확인한다.
 import { useState, useEffect } from "react";
 import { getJson, postJson, getIdentity } from "../api.js";
 import RiskBadge from "../components/RiskBadge.jsx";

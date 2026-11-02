@@ -1,3 +1,4 @@
+// 로그인 화면 (데모 계정).
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
@@ -41,4 +42,3 @@ export default function Login() {
     </div>
   );
 }
-

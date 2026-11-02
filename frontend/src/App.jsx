@@ -1,16 +1,15 @@
+// 화면 라우팅: 로그인 화면과, 사이드바 레이아웃 안의 관리자 콘솔 화면들.
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Approvals from "./pages/Approvals.jsx";
 import Console from "./pages/Console.jsx";
-import Logs from "./pages/Logs.jsx";  
+import Logs from "./pages/Logs.jsx";
 import Analytics from "./pages/Analytics.jsx";
-import Placeholder from "./pages/Placeholder.jsx";
 import Tools from "./pages/Tools.jsx";
 import Policy from "./pages/Policy.jsx";
 
-// 화면 이동(라우팅) 규칙
 export default function App() {
   return (
     <Routes>
@@ -21,7 +20,6 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/approvals" element={<Approvals />} />
-        {/* 아래는 아직 준비 중(플레이스홀더). 와이어프레임 기준으로 이어서 구현 */}
         <Route path="/console" element={<Console />} />
         <Route path="/logs" element={<Logs />} />
         <Route path="/analytics" element={<Analytics />} />

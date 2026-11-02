@@ -1,4 +1,6 @@
-
+"""
+사람 승인(Human-in-the-loop) API: 승인 대기 목록/처리, 만료 처리, WebSocket 실시간 알림.
+"""
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -42,7 +44,7 @@ async def approvals_ws(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()   
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -85,6 +87,7 @@ def get_approval(approval_id: int, db: Session = Depends(get_session)):
 class DecideRequest(BaseModel):
     decision: str            # "approve" | "reject"
 
+
 @router.post("/approvals/{approval_id}/decide")
 async def decide_approval(approval_id: int, body: DecideRequest,
                     db: Session = Depends(get_session),
@@ -124,4 +127,3 @@ async def decide_approval(approval_id: int, body: DecideRequest,
     db.commit()
     db.refresh(ap)
     return ap
-

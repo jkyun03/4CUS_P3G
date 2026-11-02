@@ -1,3 +1,6 @@
+"""
+위험 신호 점수를 합산한다(최대 100).
+"""
 from app.core.analyzers import RiskSignal
 
 

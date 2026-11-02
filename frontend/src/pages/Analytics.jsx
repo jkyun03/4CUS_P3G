@@ -1,3 +1,4 @@
+// 분석·리포트 화면: 판정 분포 등 통계와 CSV/PDF 리포트 다운로드.
 import { useEffect, useState } from "react";
 import { getJson, API_BASE } from "../api.js";
 

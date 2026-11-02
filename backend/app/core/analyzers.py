@@ -1,4 +1,6 @@
-
+"""
+도구 호출 1건과 직전 호출 이력을 보고 위험 신호(RiskSignal)와 점수를 뽑아내는 규칙 모음.
+"""
 from dataclasses import dataclass
 
 from app.core import prompt_injection, ml_classifier

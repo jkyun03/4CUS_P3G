@@ -1,3 +1,6 @@
+"""
+툴 포이즈닝 탐지: 도구 설명의 숨은 지시문 검사와 최초 등록본 대비 의미 변조(rug-pull) 감지.
+"""
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 

@@ -1,3 +1,4 @@
+// 백엔드 API 호출 함수와 로그인 토큰(sessionStorage) 관리.
 export const API_BASE = "http://localhost:8000";
 
 let authToken = null;
@@ -102,4 +103,3 @@ export function openApprovalsSocket(onMessage) {
   ws.onmessage = (e) => onMessage(JSON.parse(e.data));
   return ws;
 }
-

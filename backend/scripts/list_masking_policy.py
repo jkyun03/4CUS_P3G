@@ -1,6 +1,6 @@
 """
 직군별 필드 마스킹 정책을 표로 출력한다.
-실행: python list_masking_policy.py
+실행: backend 폴더에서 python -m scripts.list_masking_policy
 """
 from app.core.masking import FIELD_POLICY, DEFAULT_POLICY
 

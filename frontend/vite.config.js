@@ -1,3 +1,4 @@
+// Vite 개발 서버/빌드 설정.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 

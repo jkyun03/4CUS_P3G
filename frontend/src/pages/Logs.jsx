@@ -1,3 +1,4 @@
+// 감사 로그 화면: 이벤트 목록과 상세 탐지 사유.
 import { useEffect, useState } from "react";
 import { getJson } from "../api.js";
 import RiskBadge from "../components/RiskBadge.jsx";

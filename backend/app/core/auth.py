@@ -1,3 +1,6 @@
+"""
+비밀번호 해싱(PBKDF2)과 JWT 발급/검증. 서명 키는 환경변수 JWT_SECRET 으로 설정한다.
+"""
 import os
 import hashlib
 import secrets

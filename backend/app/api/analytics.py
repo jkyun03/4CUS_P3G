@@ -1,3 +1,6 @@
+"""
+대시보드용 집계 API: 판정별 건수, 마스킹 건수, 승인 대기 수, 많이 호출된 도구 Top 5.
+"""
 from collections import Counter
 
 from fastapi import APIRouter, Depends

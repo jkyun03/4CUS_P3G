@@ -1,5 +1,5 @@
 """
-데이터 모델 
+데이터 모델
 """
 from datetime import datetime, timezone
 from typing import Optional
@@ -13,9 +13,9 @@ def _now() -> datetime:
 
 
 class AgentSession(SQLModel, table=True):
-    id: str = Field(primary_key=True)             
-    user_id: str                                  
-    user_request: str                             
+    id: str = Field(primary_key=True)
+    user_id: str
+    user_request: str
     created_at: datetime = Field(default_factory=_now)
 
 
@@ -47,8 +47,9 @@ class Tool(SQLModel, table=True):
     base_risk: str                                # low | medium | high
     enabled: bool = True
     allowed_roles: list = Field(default_factory=list, sa_column=Column(JSON))
-    description: str = ""                         
-    baseline_description: Optional[str] = None     
+    description: str = ""
+    baseline_description: Optional[str] = None
+
 
 class Approval(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -64,12 +65,14 @@ class Approval(SQLModel, table=True):
     decided_at: Optional[datetime] = None
     decided_by: Optional[str] = None
     expires_at: datetime                     # 이 시각이 지나면 자동 거부
-    
+
+
 class PolicyThreshold(SQLModel, table=True):
-        id: int = Field(default=1, primary_key=True)
-        warn: int = 30       # 30점 이상 경고
-        approve: int = 60    # 60점 이상 승인 필요
-        block: int = 80      # 80점 이상 차단
+    id: int = Field(default=1, primary_key=True)
+    warn: int = 30       # 30점 이상 경고
+    approve: int = 60    # 60점 이상 승인 필요
+    block: int = 80      # 80점 이상 차단
+
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

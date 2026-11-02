@@ -1,3 +1,6 @@
+"""
+게이트웨이 핵심 API(POST /v1/tool_call): 권한·무결성 검사 -> 위험 분석 -> 정책 판정 -> 실행·마스킹 -> 감사 로그.
+"""
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 

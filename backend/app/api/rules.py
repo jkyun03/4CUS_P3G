@@ -1,3 +1,6 @@
+"""
+위험 점수 판정 임계값(경고/승인/차단) 조회 및 관리자 수정 API.
+"""
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

@@ -1,3 +1,4 @@
+// 정책 설정 화면: 경고/승인/차단 임계값 조정.
 import { useEffect, useState } from "react";
 import { getJson, patchJson } from "../api.js";
 

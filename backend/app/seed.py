@@ -47,9 +47,10 @@ def seed_tools() -> None:
                 row.baseline_description = description
                 session.add(row)
         session.commit()
-        
+
+
 def seed_thresholds():
     with Session(engine) as s:
         if not s.get(PolicyThreshold, 1):
-            s.add(PolicyThreshold(id=1))  
+            s.add(PolicyThreshold(id=1))
             s.commit()
