@@ -1,3 +1,6 @@
+"""
+감사 로그(Event) 조회 API: 최근 이벤트 목록과 세션 단위 상세 흐름.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 

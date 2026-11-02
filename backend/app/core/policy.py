@@ -1,6 +1,10 @@
+"""
+위험 점수와 임계값으로 최종 판정(allow/warn/mask/approve/block)을 내린다.
+"""
 from dataclasses import dataclass
 
-from app.core.analyzers import RiskSignal, SENSITIVE_READ_TOOLS
+from app.core.analyzers import SENSITIVE_READ_TOOLS
+
 
 @dataclass
 class Thresholds:
@@ -8,11 +12,13 @@ class Thresholds:
     approve: int = 60
     block: int = 80
 
+
 @dataclass
 class Decision:
     action: str
     masked: bool
     reasons: list
+
 
 def decide(score_value, signals, tool_name, thresholds=None):
     t = thresholds or Thresholds()

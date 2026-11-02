@@ -1,3 +1,6 @@
+"""
+MCP 도구 목록 조회 및 도구별 활성화/허용 직군 관리 API.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select

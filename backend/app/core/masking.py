@@ -1,3 +1,6 @@
+"""
+직군과 담당 환자 여부에 따라 응답 필드를 원문/부분/비식별/접근불가로 마스킹한다.
+"""
 import re
 from app.mcp_tools.registry import PATIENTS
 
@@ -20,21 +23,20 @@ def _mask_rrn_partial(value: str) -> str:
     m = re.match(r"(\d{6})-?(\d{7})", value)
     if not m:
         return DEIDENT_MARK
-    return f"{m.group(1)}-{'*' * 7}"                   
+    return f"{m.group(1)}-{'*' * 7}"
 
 
 def _mask_phone_partial(value: str) -> str:
     m = re.match(r"(01[016789])-?(\d{3,4})-?(\d{4})", value)
     if not m:
         return DEIDENT_MARK
-    return f"{m.group(1)}-{'*' * len(m.group(2))}-{m.group(3)}"   
+    return f"{m.group(1)}-{'*' * len(m.group(2))}-{m.group(3)}"
 
 
 def _mask_patient_id_partial(value: str) -> str:
     if len(value) <= 3:
         return value
-    return value[:2] + "*" * (len(value) - 2)           
-
+    return value[:2] + "*" * (len(value) - 2)
 
 
 PARTIAL_MASKERS = {
@@ -56,7 +58,6 @@ def _apply_level(key: str, value: str, level: str) -> str:
         masker = PARTIAL_MASKERS.get(key)
         return masker(value) if masker else DEIDENT_MARK
     return DEIDENT_MARK
-
 
 
 FIELD_POLICY = {
@@ -124,7 +125,6 @@ DEFAULT_POLICY = {
 }
 
 
-
 def _is_own_patient(role: str, user_id: str, patient_id: str) -> bool:
     if not patient_id or not user_id:
         return False
@@ -146,13 +146,11 @@ def _resolve_effective_role(role: str, user_id: str, patient_id: str) -> str:
     return role
 
 
-
 def _scan_free_text(value: str) -> str:
     value = RRN_PATTERN.sub(lambda m: m.group()[:7] + "*******", value)
     value = PHONE_PATTERN.sub("010-****-****", value)
     value = EMAIL_PATTERN.sub(lambda m: m.group()[0] + "***@***", value)
     return value
-
 
 
 def mask_data(data, role: str = "hospital_admin", user_id: str = ""):
@@ -177,4 +175,3 @@ def mask_data(data, role: str = "hospital_admin", user_id: str = ""):
         return [mask_data(item, role, user_id) for item in data]
 
     return data
-    

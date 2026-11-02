@@ -1,3 +1,6 @@
+"""
+정규식 기반 프롬프트 인젝션 탐지와 의심 문구 제거(redact).
+"""
 import re
 
 INJECTION_PATTERNS = [

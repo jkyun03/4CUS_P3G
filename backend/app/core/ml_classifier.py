@@ -1,3 +1,6 @@
+"""
+프롬프트 인젝션 판별용 경량 ML 분류기(문자 n-gram TF-IDF + 로지스틱 회귀). 서버 시작 시 내장 예문으로 학습한다.
+"""
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 

@@ -1,3 +1,6 @@
+"""
+사용자의 일별 민감정보 조회 건수를 과거 평균과 비교하는 z-score 기반 이상행동 탐지.
+"""
 import statistics
 
 MIN_HISTORY_DAYS = 3

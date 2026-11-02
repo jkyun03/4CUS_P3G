@@ -1,3 +1,6 @@
+"""
+감사 로그를 CSV 또는 PDF 보안 리포트로 내려받는 API.
+"""
 import csv
 import io
 from collections import Counter

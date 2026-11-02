@@ -1,3 +1,4 @@
+// 승인 큐 화면: 승인 대기 요청 목록, 실시간 알림, 승인/거부 처리.
 import { useEffect, useState } from "react";
 import { getJson, postJson, openApprovalsSocket } from "../api.js";
 

@@ -1,3 +1,6 @@
+"""
+로그인(JWT 발급)과 요청자 신원 확인/관리자 권한 검사 의존성.
+"""
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -50,4 +53,3 @@ def require_admin(identity: dict = Depends(get_current_user)) -> dict:
     if identity["role"] not in ("system_admin", "hospital_admin"):
         raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다")
     return identity
-

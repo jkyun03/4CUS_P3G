@@ -31,4 +31,3 @@ def seed_users() -> None:
                 session.add(User(username=username, hashed_password=hashed, salt=salt,
                                   role=role, user_id=user_id, display_name=display_name))
         session.commit()
-

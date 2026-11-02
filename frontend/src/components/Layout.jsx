@@ -1,3 +1,4 @@
+// 사이드바 + 본문 공통 레이아웃.
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar.jsx";
 

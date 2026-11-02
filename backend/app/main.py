@@ -21,6 +21,7 @@ from app.api.rules import router as rules_router
 from app.api.auth import router as auth_router
 from app.seed_users import seed_users
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
@@ -54,6 +55,7 @@ app.include_router(tools_router)
 app.include_router(reports_router)
 app.include_router(rules_router)
 app.include_router(auth_router)
+
 
 @app.get("/")
 def root():

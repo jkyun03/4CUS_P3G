@@ -1,13 +1,14 @@
+// 대시보드: 주요 지표, 판정 분포, 도구 Top, 최근 이벤트.
 import { useEffect, useState } from "react";
 import { getJson } from "../api.js";
 import RiskBadge from "../components/RiskBadge.jsx";
- 
+
 // 대시보드: 백엔드의 /analytics/summary(집계)와 /events(최근 이벤트)를 불러와 보여준다.
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [events, setEvents] = useState([]);
   const [error, setError] = useState("");
- 
+
   useEffect(() => {
     // 화면이 뜰 때 백엔드에서 데이터를 가져온다
     Promise.all([getJson("/analytics/summary"), getJson("/events?limit=10")])
@@ -17,7 +18,7 @@ export default function Dashboard() {
       })
       .catch((err) => setError(err.message));
   }, []);
- 
+
   if (error) {
     return (
       <div className="error-box">
@@ -28,11 +29,11 @@ export default function Dashboard() {
     );
   }
   if (!summary) return <div className="loading">불러오는 중…</div>;
- 
+
   return (
     <div>
       <h1 className="page-title">대시보드</h1>
- 
+
       {/* 상단 KPI 카드 */}
       <div className="kpi-row">
         <Kpi label="오늘 탐지" value={summary.total_events} />
@@ -40,7 +41,7 @@ export default function Dashboard() {
         <Kpi label="승인 대기" value={summary.pending_approvals} danger />
         <Kpi label="마스킹 적용" value={summary.masked} />
       </div>
- 
+
       <div className="two-col">
         {/* 판정 분포 */}
         <div className="card">
@@ -49,7 +50,7 @@ export default function Dashboard() {
             <DistRow key={k} label={k} count={v} total={summary.total_events} />
           ))}
         </div>
- 
+
         {/* 많이 쓰인 도구 Top */}
         <div className="card">
           <div className="card-title">도구 호출 Top</div>
@@ -58,7 +59,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
- 
+
       {/* 최근 이벤트 표 */}
       <div className="card card-flush">
         <div className="card-title card-title-pad">실시간 이벤트</div>
@@ -90,7 +91,7 @@ export default function Dashboard() {
     </div>
   );
 }
- 
+
 function Kpi({ label, value, danger }) {
   return (
     <div className="kpi">
@@ -99,7 +100,7 @@ function Kpi({ label, value, danger }) {
     </div>
   );
 }
- 
+
 function DistRow({ label, count, total, mono }) {
   const pct = total ? Math.round((count / total) * 100) : 0;
   return (
@@ -110,7 +111,7 @@ function DistRow({ label, count, total, mono }) {
     </div>
   );
 }
- 
+
 // 백엔드가 보내는 created_at 문자열엔 시간대 표시(Z, +09:00 등)가
 // 없을 수 있다 (SQLite가 저장/조회 과정에서 시간대 정보를 날리는 문제).
 // 표시가 없으면 "UTC였다"고 명시적으로 알려줘서, 브라우저가
@@ -119,7 +120,7 @@ function toDate(isoString) {
   const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(isoString);
   return new Date(hasTimezone ? isoString : isoString + "Z");
 }
- 
+
 // created_at(ISO 문자열)을 "N초 전" / "N분 전" / "HH:MM" / "MM/DD HH:MM" 형태로 바꿔준다.
 // 오늘 발생한 이벤트는 시간만, 오늘이 아니면 날짜까지 같이 보여줘서
 // "이게 오늘 건지 어제 건지" 헷갈리지 않게 한다.
@@ -128,10 +129,10 @@ function formatTime(isoString) {
   const date = toDate(isoString);
   const now = new Date();
   const diffSec = Math.floor((now - date) / 1000);
- 
+
   if (diffSec < 60) return `${diffSec}초 전`;
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}분 전`;
- 
+
   const timeStr = date.toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -140,7 +141,7 @@ function formatTime(isoString) {
   const isToday = date.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })
     === now.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
   if (isToday) return timeStr;
- 
+
   const dateStr = date.toLocaleDateString("ko-KR", {
     month: "2-digit",
     day: "2-digit",

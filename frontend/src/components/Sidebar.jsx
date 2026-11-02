@@ -1,3 +1,4 @@
+// 좌측 메뉴와 로그인 사용자 표시/로그아웃.
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, PlayCircle, ListChecks, Clock,
